@@ -30,7 +30,7 @@ jwt = JWTManager(app)
 def index():
 
   resp = (("status", "ok"),
-          ("v1", "http://inquisite.whirl-i-gig.com/api/v1"))
+          ("v1", "http://epandda.org/api/v1"))
   resp = collections.OrderedDict(resp)
 
   return Response(response=json.dumps(resp), status=200, mimetype="application/json")
@@ -90,4 +90,4 @@ def page_not_found(e):
   return Response(response=json.dumps(resp), status=404, mimetype="application/json")
 
 if __name__ == '__main__':
-  app.run()
+  app.run(host = '0.0.0.0')
