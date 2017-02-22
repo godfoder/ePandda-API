@@ -1,4 +1,4 @@
-flask-api-bootstrap
+ePandda API
 ==============
 
-RESTFUL API starter script with JWT authentication and cross domain support.
+RESTFUL API
