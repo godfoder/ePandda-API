@@ -12,6 +12,7 @@ from werkzeug.security import safe_str_cmp
 
 from epandda import banner
 from epandda import geo
+from epandda import stats
 
 
 config = json.load(open('./config.json'));
@@ -25,9 +26,9 @@ api = Api(app)
 
 # emit banner
 api.add_resource(banner.show, '/')
-
 api.add_resource(geo.geoname, '/geoname')
-
+api.add_resource(stats.stats, '/stats')
 
 if __name__ == '__main__':
   app.run(host = '0.0.0.0')
+
