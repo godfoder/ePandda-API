@@ -30,4 +30,8 @@ def response_handler(return_object):
   if "params" in return_object:
     resp['params'] = return_object['params']
 
+  # API Root
+  if "routes" in return_object:
+    resp['routes'] = return_object['routes']
+
   return Response(response=json.dumps(resp).encode('utf8'), status=status_code, mimetype=mime_type)

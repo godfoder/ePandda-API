@@ -1,11 +1,60 @@
 from mongo import mongoBasedResource
-
+from response_handler import response_handler
 #
 #
 #
 class stratigraphy(mongoBasedResource):
     def get(self):
-        locality = self.getRequest().args.get('locality')       # param
+
+        # Required
+        scientific_name = self.getRequest().args.get('scientific_name')
+        formation       = self.getRequest().args.get('formation')
+
+        # Optional
+        state_prov      = self.getRequest().args.get('state_province')
+        county          = self.getRequest().args.get('county')
+        locality        = self.getRequest().args.get('locality')       # param
+        
+
+        params = [
+          {
+            "name": "scientific_name",
+            "type": "text",
+            "value": scientific_name,
+            "required": True,
+            "description": "The taxon being searched in a given stratigraphic range"
+          },
+          {
+            "name": "formation",
+            "type": "text",
+            "value": formation,
+            "required": True,
+            "description": "The geologic formation to search for provided taxa"
+          },
+          {
+            "name": "state_province",
+            "type": "text",
+            "value": state_prov,
+            "required": False,
+            "description": "The state or province to constrain the search of a given taxa in a given formation"
+          },
+          {
+            "name": "county",
+            "type": "text",
+            "value": county,
+            "required": False,
+            "description": "The county to constrain the search of a given taxa in a given formation"
+          },
+          {
+            "name": "locality",
+            "type": "text",
+            "value": locality,
+            "required": False,
+            "description": "A locality to constrain the search of a given taxa in a given formation"
+          }
+        ]
+
+
         lindex = self.client.test.spIndex                       # Mongodb index for localities
 
         if locality:
@@ -23,18 +72,9 @@ class stratigraphy(mongoBasedResource):
 
         else:
 
-          # TODO: Think how best to automate / make dynamic
-          resp = {'success': {
-                      'v': 1,
-                      'description': 'returns specimens collected from a given locality',
-                      'params': {
-                         'locality': {
-                            'type': 'text',
-                            'required': True,
-                            'description': 'Name of the Locality where returned specimens were collected.'
-                          }
-                      }
-                    }
-                 }
+          resp = {
+            'endpoint_description': 'returns specicmen occurrence records from a given formation',
+            'params': params
+          }
 
-        return resp
+        return response_handler( resp )

@@ -1,6 +1,6 @@
 from flask_restful import Resource, Api
 from flask import current_app, url_for
-import json
+from response_handler import response_handler
 
 #
 # Emit API banner
@@ -18,8 +18,10 @@ class show(Resource):
           url = url_for(rule.endpoint, **options)
           routes.append({'url': url, 'methods': ",".join(rule.methods) }) 
 
-        return {'success': {
-                 'v': 1,
-                 'description': 'this is the root of ePANDDA REST API',
-                 'routes': routes 
-               }}
+        resp = {
+          'endpoint_description': 'this is the root of ePANDDA REST API',
+          'routes': routes
+        }
+
+        return response_handler( resp )
+        
