@@ -1,6 +1,5 @@
 {
   "auth_secret": "changethis",
-  "database_url": "db://whatever",
-  "database_user": "user",
-  "database_pass": "sample-pass"
+  "mongodb_host": "where your mongo is",
+  "version": 1.0
 }
