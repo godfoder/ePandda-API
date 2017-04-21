@@ -83,7 +83,7 @@ class stratigraphy(mongoBasedResource):
         else:
 
           resp = {
-            'endpoint_description': 'returns specicmen occurrence records from a given formation',
+            'endpoint_description': 'Returns specicmen occurrence records from a given formation',
             'params': params
           }
 
@@ -93,7 +93,7 @@ class stratigraphy(mongoBasedResource):
       args = parser.parse_args()
  
       resp = {
-        'endpoint_description': 'returns specimen occurrence with stratigraphic records from a given formation',
+        'endpoint_description': 'Returns specimen occurrence with stratigraphic records from a given formation',
         'params': args
       }
 

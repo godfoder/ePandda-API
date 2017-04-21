@@ -5,10 +5,10 @@ from flask_restful import reqparse
 parser = reqparse.RequestParser()
 
 # Add Arguments (params) to parser here ...
-parser.add_argument('scientific_name', type=str, help='taxonomic name to search occurrences for')
-parser.add_argument('locality', type=str, help='locality name to filter taxonomic occurrences by')
-parser.add_argument('period', type=str, help='the geologic time period to filter taxonomic occurrences by')
-parser.add_argument('institution_code', type=str, help='the abbreviated code submitted by data provider to filter taxonomic occurrences by')
+parser.add_argument('scientific_name', type=str, help='Taxonomic name to search occurrences for')
+parser.add_argument('locality', type=str, help='Locality name to filter taxonomic occurrences by')
+parser.add_argument('period', type=str, help='The geologic time period to filter taxonomic occurrences by')
+parser.add_argument('institution_code', type=str, help='The abbreviated code submitted by data provider to filter taxonomic occurrences by')
 
 #
 #

@@ -3,7 +3,7 @@ import os.path
 from collections import OrderedDict
 from flask import Response
 
-config = json.load(open( os.path.dirname(__file__) + '/../config.json'));
+config = json.load(open('./config.json'));
 
 def response_handler(return_object):
 
@@ -13,7 +13,7 @@ def response_handler(return_object):
     "v": config['version'],
   }
 
-  # Default Mime Type with override handling
+  # Default Mimetype with override handling
   mime_type = "application/json"
   if "mimetype" in return_object:
     mime_type = return_object['mimetype']
@@ -34,4 +34,4 @@ def response_handler(return_object):
   if "routes" in return_object:
     resp['routes'] = return_object['routes']
 
-  return Response(response=json.dumps(resp).encode('utf8'), status=status_code, mimetype=mime_type)
+  return Response(response=json.dumps(resp, sort_keys=True,indent=4, separators=(',', ': ')).encode('utf8'), status=status_code, mimetype=mime_type)

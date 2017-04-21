@@ -4,13 +4,13 @@ from flask_restful import reqparse
 
 parser = reqparse.RequestParser()
 
-parser.add_argument('scientific_name', type=str, help='taxonomic name to search bibliographic records for')
-parser.add_argument('journal', type=str, help='journal name where taxon was described')
-parser.add_argument('article', type=str, help='article name where taxon was described')
-parser.add_argument('author', type=str, help='one of the authors of article describing taxon')
-parser.add_argument('state_province', type=str, help='state or province name to filter described taxon results')
-parser.add_argument('county', type=str, help='county name to filter described taxon results')
-parser.add_argument('locality', type=str, help='locality name to filter described taxon results')
+parser.add_argument('scientific_name', type=str, help='Taxonomic name to search bibliographic records for')
+parser.add_argument('journal', type=str, help='Journal name where taxon was described')
+parser.add_argument('article', type=str, help='Article name where taxon was described')
+parser.add_argument('author', type=str, help='One of the authors of article describing taxon')
+parser.add_argument('state_province', type=str, help='State or province name to filter described taxon results')
+parser.add_argument('county', type=str, help='County name to filter described taxon results')
+parser.add_argument('locality', type=str, help='Locality name to filter described taxon results')
 
 #
 #
@@ -99,7 +99,7 @@ class biblio(mongoBasedResource):
         else:
 
           resp = {
-            'endpoint_description': 'returns specimen occurrence and publication records for a given scientific name. results can be filtered by the optional params',
+            'endpoint_description': 'Returns specimen occurrence and publication records for a given scientific name. results can be filtered by the optional params',
             'params': params
           }
           
@@ -109,7 +109,7 @@ class biblio(mongoBasedResource):
       args = parser.parse_args()
 
       resp = {
-        'endpoint_description': 'returns specimens with associated publication and bibliographic records',
+        'endpoint_description': 'Returns specimens with associated publication and bibliographic records',
         'params': args
       }
 

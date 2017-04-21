@@ -4,7 +4,7 @@ from flask_restful import reqparse
 
 parser = reqparse.RequestParser()
 
-parser.add_argument('locality', type=str, help='locality name to to search geoname records by')
+parser.add_argument('locality', type=str, help='Locality name to to search geoname records by')
 
 #
 #
@@ -30,7 +30,7 @@ class geoname(mongoBasedResource):
         else:
 
           resp = {
-            'endpoint_description': 'returns specimens collected from a given locality',
+            'endpoint_description': 'Returns specimens collected from a given locality',
             'params': params
           }
           
@@ -42,7 +42,7 @@ class geoname(mongoBasedResource):
       args = parser.parse_args()
   
       resp = {
-        'endpoint_description': 'returns geoname records',
+        'endpoint_description': 'Returns geoname records',
         'params': args
       }
 

@@ -19,7 +19,7 @@ class show(Resource):
           routes.append({'url': url, 'methods': ",".join(rule.methods) }) 
 
         resp = {
-          'endpoint_description': 'this is the root of ePANDDA REST API',
+          'endpoint_description': 'ePANDDA REST API guide',
           'routes': routes
         }
 
