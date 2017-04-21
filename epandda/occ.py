@@ -1,5 +1,14 @@
 from mongo import mongoBasedResource
 from response_handler import response_handler
+from flask_restful import reqparse
+
+parser = reqparse.RequestParser()
+
+# Add Arguments (params) to parser here ...
+parser.add_argument('scientific_name', type=str, help='taxonomic name to search occurrences for')
+parser.add_argument('locality', type=str, help='locality name to filter taxonomic occurrences by')
+parser.add_argument('period', type=str, help='the geologic time period to filter taxonomic occurrences by')
+parser.add_argument('institution_code', type=str, help='the abbreviated code submitted by data provider to filter taxonomic occurrences by')
 
 #
 #
@@ -70,10 +79,20 @@ class occurrences(mongoBasedResource):
 
         else:
 
-          # TODO: Think how best to automate / make dynamic
           resp = {
             'endpoint_description': 'returns specimens collected from a given locality',
             'params': params
           }
 
         return response_handler( resp )
+
+    def post(self):
+        args = parser.parse_args()
+
+        resp = {
+          'endpoint_description': 'returns specimens collected from a given locality',
+          'params': args
+        }
+
+        return response_handler( resp )
+

@@ -1,5 +1,15 @@
 from mongo import mongoBasedResource
 from response_handler import response_handler
+from flask_restful import reqparse
+
+parser = reqparse.RequestParser()
+
+parser.add_argument('scientific_name', type=str, help='taxonomic name to search stratigraphy for')
+parser.add_argument('formation', type=str, help='formation name to filter taxonomic results by')
+parser.add_argument('state_province', type=str, help='state or province name to filter taxonomic results by')
+parser.add_argument('county', type=str, help='county name to filter taxonomic results by')
+parser.add_argument('locality', type=str, help='locality name to filter taxonomic results by')
+
 #
 #
 #
@@ -78,3 +88,13 @@ class stratigraphy(mongoBasedResource):
           }
 
         return response_handler( resp )
+
+    def post(self):
+      args = parser.parse_args()
+ 
+      resp = {
+        'endpoint_description': 'returns specimen occurrence with stratigraphic records from a given formation',
+        'params': args
+      }
+
+      return response_handler( resp )

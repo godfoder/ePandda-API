@@ -1,4 +1,10 @@
 from mongo import mongoBasedResource
+from response_handler import response_handler
+from flask_restful import reqparse
+
+parser = reqparse.RequestParser()
+
+parser.add_argument('locality', type=str, help='locality name to to search geoname records by')
 
 #
 #
@@ -23,18 +29,21 @@ class geoname(mongoBasedResource):
 
         else:
 
-          # TODO: Think how best to automate / make dynamic
-          resp = {'success': {
-                      'v': 1,
-                      'description': 'returns specimens collected from a given locality',
-                      'params': {
-                         'locality': {
-                            'type': 'text',
-                            'required': True,
-                            'description': 'Name of the Locality where returned specimens were collected.'
-                          }
-                      }
-                    }
-                 }
+          resp = {
+            'endpoint_description': 'returns specimens collected from a given locality',
+            'params': params
+          }
+          
 
-        return resp
+
+        return response_handler( resp )
+
+    def post(self):
+      args = parser.parse_args()
+  
+      resp = {
+        'endpoint_description': 'returns geoname records',
+        'params': args
+      }
+
+      return response_handler( resp )

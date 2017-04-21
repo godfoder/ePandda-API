@@ -1,5 +1,16 @@
 from mongo import mongoBasedResource
 from response_handler import response_handler
+from flask_restful import reqparse
+
+parser = reqparse.RequestParser()
+
+parser.add_argument('scientific_name', type=str, help='taxonomic name to search bibliographic records for')
+parser.add_argument('journal', type=str, help='journal name where taxon was described')
+parser.add_argument('article', type=str, help='article name where taxon was described')
+parser.add_argument('author', type=str, help='one of the authors of article describing taxon')
+parser.add_argument('state_province', type=str, help='state or province name to filter described taxon results')
+parser.add_argument('county', type=str, help='county name to filter described taxon results')
+parser.add_locality('locality', type=str, help='locality name to filter described taxon results')
 
 #
 #
@@ -93,3 +104,13 @@ class biblio(mongoBasedResource):
           }
           
         return response_handler( resp )
+
+    def post(self):
+      args = parser.parse_args()
+
+      resp = {
+        'endpoint_description': 'returns specimens with associated publication and bibliographic records',
+        'params': args
+      }
+
+      return response_handler( resp )
