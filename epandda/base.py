@@ -17,7 +17,7 @@ class baseResource(Resource):
         # Load API config
         self.config = json.load(open('./config.json'))
 
-        self.client = MongoClient(self.config['mongodb_host'])
+        self.client = MongoClient("mongodb://" + self.config['mongodb_user'] + ":" + self.config['mongodb_password'] + "@" + self.config['mongodb_host'])
         self.idigbio = self.client.idigbio.occurrence
         self.pbdb = self.client.test.pbdb_flat_index
 
@@ -38,7 +38,7 @@ class baseResource(Resource):
 
             resolved = []
             for mitem in m:
-                resolved.append({"uuid": mitem['idigbio:uuid']})
+                resolved.append({"uuid": mitem['idigbio:uuid'], "url": "https://www.idigbio.org/portal/records/" + mitem['idigbio:uuid']})
             resolved_references["idigbio_resolved"] = resolved
 
             # resolve pbdb refs
