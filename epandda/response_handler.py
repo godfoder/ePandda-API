@@ -23,6 +23,8 @@ def response_handler(return_object):
   if "status_code" in return_object:
     status_code = return_object['status_code']
 
+  if "data" in return_object:
+    resp['data'] = return_object['data']
 
   if "endpoint_description" in return_object:
     resp['description'] = return_object['endpoint_description']
