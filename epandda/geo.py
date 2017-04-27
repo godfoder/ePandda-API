@@ -12,6 +12,17 @@ parser.add_argument('locality', type=str, help='Locality name to to search geona
 class geoname(mongoBasedResource):
     def get(self):
         locality = self.getRequest().args.get('locality')       # param
+    	
+    	params = [
+          {
+            "name": "locality",
+            "type": "text", 
+            "value": locality,
+            "required": True,
+            "description": "Name of locality to find"
+          }
+        ]
+    
         lindex = self.client.test.spIndex                       # Mongodb index for localities
 
         if locality:
@@ -24,9 +35,8 @@ class geoname(mongoBasedResource):
               item = {"terms": terms, "matches": {"pbdb": i['pbdb_data'], "idigbio": i['idb_data']}}
               d.append(item)
 
-          d = self.resolveReferences(d)
-          resp = self.toJson(d)
-
+          resp = {'data': self.resolveReferences(d) }
+		
         else:
 
           resp = {
@@ -34,8 +44,6 @@ class geoname(mongoBasedResource):
             'params': params
           }
           
-
-
         return response_handler( resp )
 
     def post(self):
