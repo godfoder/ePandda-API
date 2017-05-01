@@ -13,7 +13,7 @@ from werkzeug.security import safe_str_cmp
 from epandda import banner
 from epandda import geo
 from epandda import stats
-from epandda import biblio
+from epandda import publication
 from epandda import strat
 from epandda import occ
 
@@ -31,10 +31,10 @@ api = Api(app)
 api.add_resource(banner.show, '/')
 api.add_resource(geo.geoname, '/geoname')
 api.add_resource(stats.stats, '/stats')
-api.add_resource(biblio.biblio, '/bibliographic')
+api.add_resource(publication.pubs, '/publication')
 api.add_resource(strat.stratigraphy, '/stratigraphy')
 api.add_resource(occ.occurrences, '/occurrence')
 
 if __name__ == '__main__':
-  app.run(host = '0.0.0.0')
-
+  #app.run(host = '0.0.0.0')
+  app.run()

@@ -15,7 +15,7 @@ parser.add_argument('locality', type=str, help='Locality name to filter describe
 #
 #
 #
-class biblio(mongoBasedResource):
+class pubs(mongoBasedResource):
     def get(self):
 
         # Required
@@ -42,7 +42,7 @@ class biblio(mongoBasedResource):
             "type": "text",
             "value": journal,
             "required": False,
-            "description": "Then name of academic Journal a bibligraphic description would be found"
+            "description": "Then name of academic Journal a publication would be found"
           },
           {
             "name": "article",
