@@ -17,7 +17,7 @@ class baseResource(Resource):
         # Load API config
         self.config = json.load(open('./config.json'))
 
-        self.client = MongoClient(self.config['mongodb_host'])
+        self.client = MongoClient(self.config['mongodb_user'] + ":" + self.config['mongodb_password'] + "@" + self.config['mongodb_host'])
         self.idigbio = self.client.idigbio.occurrence
         self.pbdb = self.client.test.pbdb_flat_index
 
