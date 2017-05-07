@@ -1,5 +1,4 @@
 from mongo import mongoBasedResource
-from response_handler import response_handler
 from flask_restful import reqparse
 
 parser = reqparse.RequestParser()
@@ -14,48 +13,15 @@ parser.add_argument('institution_code', type=str, help='The abbreviated code sub
 #
 #
 class occurrences(mongoBasedResource):
-    def get(self):
+    def process(self):
 
         # required
         taxon_name = self.getRequest().args.get('taxon_name')   # param
-        
+
         # optional
         locality   = self.getRequest().args.get('locality')       # param
         period     = self.getRequest().args.get('period')
         inst_code  = self.getRequest().args.get('institution_code')
-
-        
-        # params dict list 
-        params = [
-          {
-            "name": "taxon_name",
-            "type": "text",
-            "value": taxon_name,
-            "required": True,
-            "description": "The taxa to search occurrences for"
-          },
-          {
-            "name": "locality",
-            "type": "text",
-            "value": locality,
-            "required": False,
-            "description": "The locality name to bound taxonomic occurences to",
-          },
-          {
-            "name": "period",
-            "type": "text",
-            "value": period,
-            "description": "The geologic time period to filter taxon occurrences by"
-          },
-          {
-            "name": "institution_code",
-            "type": "text",
-            "char_limit": "TBD",
-            "value": inst_code,
-            "description": "The abbreviated institution code that houses the taxon occurrence specimen"
-          }
-        ]   
-
 
 
         # TODO: use occ Index
@@ -63,36 +29,50 @@ class occurrences(mongoBasedResource):
 
         if taxon_name:
 
-          # TODO: update for Occurrences
+            # TODO: update for Occurrences
 
-          res = lindex.find({"$text": {"$search": locality}})
+            res = lindex.find({"$text": {"$search": locality}})
 
-          d = []
-          for i in res:
-              terms = i['original_terms']
-              terms.append(locality)
-              item = {"terms": terms, "matches": {"pbdb": i['pbdb_data'], "idigbio": i['idb_data']}}
-              d.append(item)
+            d = []
+            for i in res:
+                terms = i['original_terms']
+                terms.append(locality)
+                item = {"terms": terms, "matches": {"pbdb": i['pbdb_data'], "idigbio": i['idb_data']}}
+                d.append(item)
 
-          d = self.resolveReferences(d)
-          resp = self.toJson(d)
-
+            return self.respond(self.resolveReferences(d))
         else:
+            return self.respondWithDescription()
 
-          resp = {
-            'endpoint_description': 'returns specimens collected from a given locality',
-            'params': params
-          }
 
-        return response_handler( resp )
-
-    def post(self):
-        args = parser.parse_args()
-
-        resp = {
-          'endpoint_description': 'returns specimens collected from a given locality',
-          'params': args
-        }
-
-        return response_handler( resp )
-
+    def description(self):
+        return {
+            'name': 'Occurrence index',
+            'maintainer': 'Michael Benowitz',
+            'maintainer_email': 'michael@epandda.org',
+            'description': 'Returns specimens collected from a given locality',
+            'params': [
+                {
+                    "name": "taxon_name",
+                    "type": "text",
+                    "required": True,
+                    "description": "The taxa to search occurrences for"
+                },
+                {
+                    "name": "locality",
+                    "type": "text",
+                    "required": False,
+                    "description": "The locality name to bound taxonomic occurences to",
+                },
+                {
+                    "name": "period",
+                    "type": "text",
+                    "description": "The geologic time period to filter taxon occurrences by"
+                },
+                {
+                    "name": "institution_code",
+                    "type": "text",
+                    "char_limit": "TBD",
+                    "description": "The abbreviated institution code that houses the taxon occurrence specimen"
+                }
+            ]}
