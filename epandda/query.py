@@ -1,7 +1,6 @@
 from flask_restful import Resource, Api
 from flask import current_app, url_for
 from base import baseResource
-import importlib
 
 #
 # Boolean
@@ -13,9 +12,16 @@ class query(baseResource):
 
         queries = []
         for q in query_list:
-            queries.append(q)
+            if "endpoint" not in q or "parameters" not in q:
+                continue
+
+            endpoint = self.loadEndpoint(q['endpoint'])
+            if endpoint is not None:
+                endpoint.returnResponse = False
+                endpoint.setParams(q['parameters'])
+
+                queries.append(endpoint.process())
 
         return self.respond({
-          'description': 'ePANDDA query endpoint',
-          'routes': queries
-        }, "routes")
+          'queries': queries
+        }, "queries")

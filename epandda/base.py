@@ -5,6 +5,8 @@ from pymongo import MongoClient
 from bson import Binary, Code, json_util, BSON, ObjectId
 from bson.json_util import dumps
 import datetime
+import importlib
+import inspect
 
 #
 # Base class for API resource
@@ -22,8 +24,10 @@ class baseResource(Resource):
         self.idigbio = self.client.idigbio.occurrence
         self.pbdb = self.client.test.pbdb_flat_index
 
-        self.params = {}
+        self.params = None
         self.paramCount = 0;
+
+        self.returnResponse = True
 
     #
     # Return request object
@@ -58,6 +62,25 @@ class baseResource(Resource):
         return resolved_references
 
     #
+    # Set parameter data directly
+    #
+    def setParams(self, data):
+        desc = self.description()['params'][:]
+
+        if "offset" not in data:
+            data["offset"] = 0
+        if "limit" not in data:
+            data["limit"] = 100
+
+        for p in desc:
+            if p["name"] not in data:
+                data[p["name"]] = None
+
+        self.params = data
+        self.validateParams()
+        self.paramCount = len(data)
+
+    #
     # Get request parameters. Only parameters declared in the endpoint's description will be
     # returned, along with standard control parameters like offset and limit.
     #
@@ -67,6 +90,9 @@ class baseResource(Resource):
     # an exception will be raised.
     #
     def getParams(self):
+        if  self.paramCount > 0:
+            return self.params
+
         desc = self.description()['params'][:]
         r = self.getRequest()
         r_as_json = request.get_json(silent=True)
@@ -78,7 +104,7 @@ class baseResource(Resource):
         self.params = {}
 
         c = 0
-        errors = {}
+
         for p in desc:
             # JSON blob
             if r_as_json is not None:
@@ -105,16 +131,28 @@ class baseResource(Resource):
                 else:
                     self.params[p['name']] = None
 
+        self.validateParams()
+
+        self.paramCount = c
+
+        return self.params
+
+    #
+    # Validate parameter values
+    #
+    def validateParams(self):
+        desc = self.description()['params'][:]
+        errors = {}
+
+        for p in desc:
             # Throw errors for missing required values
             if 'required' in p and p['required'] and (self.params[p['name']] is None or len(self.params[p['name']]) == 0):
                 errors[p['name']] = "No value for required parameter " + p['name']
 
-        self.paramCount = c
-
         if len(errors) > 0:
             raise Exception(errors)
 
-        return self.params
+        return True
 
     #
     # Return query list from submitted multi-query JSON blob
@@ -232,6 +270,12 @@ class baseResource(Resource):
                 "timeReturned": str(datetime.datetime.now()),
                 "v": self.config['version']
             }
+        elif respType == "queries":
+            defaults = {
+                "queries": [],
+                "timeReturned": str(datetime.datetime.now()),
+                "v": self.config['version']
+            }
         else:
             defaults = {
                 "counts": {},
@@ -270,29 +314,35 @@ class baseResource(Resource):
         if "params" in return_object:
             resp['params'] = return_object['params']
 
-        return Response(response=json.dumps(resp, sort_keys=True, indent=4, separators=(',', ': ')).encode('utf8'),
-                        status=status_code, mimetype=mime_type)
+        if self.returnResponse:
+            return Response(json.dumps(resp, sort_keys=True, indent=4, separators=(',', ': ')).encode('utf8'), status=status_code, mimetype=mime_type)
+        else:
+            return resp
 
     #
     #
     #
-    def loadEndpoint(endpoint):
+    def loadEndpoint(self, endpoint):
         try:
-            module = importlib.import_module('widgets.{0}'.format(widget_type))
+            module = importlib.import_module("." + endpoint, "epandda")
             for x in dir(module):
                 obj = getattr(module, x)
 
-                if inspect.isclass(obj) and issubclass(obj, WidgetAPI) and obj is not WidgetAPI:
-                    return obj
-        except ImportError:
+                if inspect.isclass(obj) and issubclass(obj, Resource) and obj is not Resource:
+                    return obj()
             return None
+        except ImportError as e:
+            return e.args[0]
 
     #
     # Respond with description of endpoint. Used when user hits an endpoint with no parameters.
     #
     def respondWithDescription(self):
-        return Response(response=json.dumps(self.description(), sort_keys=True, indent=4, separators=(',', ': ')).encode('utf8'),
-                        status=200, mimetype="text/json")
+
+        if self.returnResponse:
+            return Response(json.dumps(self.description(), sort_keys=True, indent=4, separators=(',', ': ')).encode('utf8'), status=200, mimetype="text/json")
+        else:
+            return self.description()
 
     #
     # Respond with error message.
@@ -311,9 +361,10 @@ class baseResource(Resource):
                     errors_filtered[i] = [v for key in errors[i] for v in key]
                 else:
                     errors_filtered[i] = [errors[i]]
+            else:
+                errors_filtered[i] = "Unknown error: " + errors
 
-
-        return Response(
-            response=json.dumps({"errors": errors_filtered}, sort_keys=True, indent=4, separators=(',', ': ')).encode(
-                'utf8'),
-            status=500, mimetype="text/json")
+        if self.returnResponse:
+            return Response(json.dumps({"errors": errors_filtered}, sort_keys=True, indent=4, separators=(',', ': ')).encode('utf8'), status=500, mimetype="text/json")
+        else:
+            return {"errors": errors_filtered}
