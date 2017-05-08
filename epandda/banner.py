@@ -18,7 +18,10 @@ class banner(baseResource):
             options[arg] = "[{0}]".format(arg)
 
           url = url_for(rule.endpoint, **options)
-          routes.append({'url': url, 'methods': ",".join(rule.methods) })
+          endpoint = self.loadEndpoint(rule.endpoint)
+
+          desc = endpoint.description();
+          routes.append({'url': url, 'methods': ",".join(rule.methods), 'name': desc['name'], 'description': desc['description'] })
 
         return self.respond({
           'description': 'ePANDDA REST API guide',
