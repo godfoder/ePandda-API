@@ -6,7 +6,7 @@ from base import baseResource
 # Emit API banner
 #
 class show(baseResource):
-    def get(self):
+    def process(self):
 
         routes = []
         for rule in current_app.url_map.iter_rules():
