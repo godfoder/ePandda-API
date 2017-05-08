@@ -25,7 +25,7 @@ class baseResource(Resource):
         self.pbdb = self.client.test.pbdb_flat_index
 
         self.params = None
-        self.paramCount = 0;
+        self.paramCount = 0
 
         self.returnResponse = True
 
