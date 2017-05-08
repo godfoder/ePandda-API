@@ -23,12 +23,12 @@ class geoname(mongoBasedResource):
         # will throw exception if required param is not present
         params = self.getParams()
 
+
         # offset and limit returned as ints with default if not set
         offset = self.offset()
         limit = self.limit()
 
-
-        if len(params) > 0:
+        if self.paramCount > 0:
           criteria = {'endpoint': 'geoname', 'parameters': {}, 'matchTerms': {'stateProvinceNames': [], 'countryNames': [], 'countyNames': [], 'localityNames': [], 'originalStates': [], 'originalCountries': [], 'originalCounties': [], 'originalLocalities': []}}
           geoQuery = []
 
@@ -37,6 +37,8 @@ class geoname(mongoBasedResource):
                   criteria['parameters'][p] = params[p]
                   geoQuery.append({p: params[p]})
 
+          if (len(geoQuery) == 0):
+            return self.respondWithError({"GENERAL": "No parameters specified"})
 
           res = lindex.find({'$and': geoQuery})
 

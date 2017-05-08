@@ -23,6 +23,7 @@ class baseResource(Resource):
         self.pbdb = self.client.test.pbdb_flat_index
 
         self.params = {}
+        self.paramCount = 0;
 
     #
     # Return request object
@@ -62,18 +63,22 @@ class baseResource(Resource):
     def getParams(self):
         desc = self.description()['params'][:]
         r = self.getRequest()
-        r_as_json = request.get_json()
+        r_as_json = request.get_json(silent=True)
 
         # always pull offset and limit params
         desc.append({"name": "offset"})
         desc.append({"name": "limit"})
 
         self.params = {}
+
+        c = 0
+        errors = {}
         for p in desc:
             # JSON blob
             if r_as_json is not None:
                 if(p['name'] in r_as_json):
                     self.params[p['name']] = r_as_json[p['name']]
+                    c = c + 1
                 else:
                     self.params[p['name']] = None
 
@@ -81,6 +86,7 @@ class baseResource(Resource):
             elif request.method == 'POST':
                 if(p['name'] in request.form):
                     self.params[p['name']] = request.form[p['name']]
+                    c = c + 1
                 else:
                     self.params[p['name']] = None
 
@@ -89,9 +95,18 @@ class baseResource(Resource):
                 v = r.args.get(p['name'])
                 if (v):
                     self.params[p['name']] = v
+                    c = c + 1
                 else:
                     self.params[p['name']] = None
 
+            # Throw errors for missing required values
+            if 'required' in p and p['required'] and (self.params[p['name']] is None or len(self.params[p['name']]) == 0):
+                errors[p['name']] = "No value for required parameter " + p['name']
+
+        self.paramCount = c
+
+        if len(errors) > 0:
+            raise Exception(errors)
 
         return self.params
 
@@ -143,7 +158,7 @@ class baseResource(Resource):
 
         # Kill _id keys (and maybe some others too soon...)
         #for record in json_data:
-         #  record.pop('_id', None)
+        #  record.pop('_id', None)
         return json_data
 
 
@@ -152,14 +167,32 @@ class baseResource(Resource):
     # (just calls process() and returns response as-is, which should be fine 99.9999999999% of the time)
     #
     def get(self):
-        return self.process()
+        try:
+            return self.process()
+        except Exception as e:
+            return self.respondWithError(e.args[0])
 
     #
     # Default handler for POST requests
     # (just calls process() and returns response as-is, which should be fine 99.9999999999% of the time)
     #
     def post(self):
-        return self.process()
+        try:
+            return self.process()
+        except Exception as e:
+            return self.respondWithError(e.args[0])
+
+    #
+    #
+    #
+    def getParameterNames(self):
+        desc = self.description()
+
+        names = []
+        for f in desc['params']:
+            names.append(f['name'])
+
+        return names
 
     #
     # Return an API response. The format of the response can vary based upon
@@ -169,7 +202,6 @@ class baseResource(Resource):
     #   "routes" => a list of valid API endpoints, with descriptions for each.
     #
     def respond(self, return_object, respType="data"):
-
         # Default Response
         if respType == "routes":
             defaults = {
@@ -196,9 +228,9 @@ class baseResource(Resource):
 
         for k in defaults:
             if k in return_object:
-               resp[k] = return_object[k]
+                resp[k] = return_object[k]
             else:
-               resp[k] = defaults[k]
+                resp[k] = defaults[k]
 
         # Default Mimetype with override handling
         mime_type = "application/json"
@@ -224,4 +256,28 @@ class baseResource(Resource):
     #
     def respondWithDescription(self):
         return Response(response=json.dumps(self.description(), sort_keys=True, indent=4, separators=(',', ': ')).encode('utf8'),
-            status=200, mimetype="text/json")
+                        status=200, mimetype="text/json")
+
+    #
+    # Respond with error message.
+    #
+    def respondWithError(self, errors):
+        names = self.getParameterNames()
+
+        # process errors, omitting ones not related to a parameter or GENERAL (the generic error heading)
+        errors_filtered = {}
+
+        for i in errors:
+            if i == "GENERAL" or i in names:
+                if type(errors[i]) is list:
+                    errors_filtered[i] = errors[i]
+                elif type(errors[i]) is tuple:
+                    errors_filtered[i] = [v for key in errors[i] for v in key]
+                else:
+                    errors_filtered[i] = [errors[i]]
+
+
+        return Response(
+            response=json.dumps({"errors": errors_filtered}, sort_keys=True, indent=4, separators=(',', ': ')).encode(
+                'utf8'),
+            status=500, mimetype="text/json")
