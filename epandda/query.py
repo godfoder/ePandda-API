@@ -15,7 +15,11 @@ class query(baseResource):
             if "endpoint" not in q or "parameters" not in q:
                 continue
 
-            endpoint = self.loadEndpoint(q['endpoint'])
+            try:
+                endpoint = self.loadEndpoint(q['endpoint'])
+            except Exception as e:
+                continue
+
             if endpoint is not None:
                 endpoint.returnResponse = False
                 endpoint.setParams(q['parameters'])

@@ -237,6 +237,7 @@ class baseResource(Resource):
     # (just calls process() and returns response as-is, which should be fine 99.9999999999% of the time)
     #
     def post(self):
+        #return self.process()
         try:
             return self.process()
         except Exception as e:
@@ -332,7 +333,7 @@ class baseResource(Resource):
                     return obj()
             return None
         except ImportError as e:
-            return e.args[0]
+            return None
 
     #
     # Respond with description of endpoint. Used when user hits an endpoint with no parameters.
