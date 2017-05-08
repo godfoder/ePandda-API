@@ -17,8 +17,13 @@ from epandda import publications
 from epandda import stratigraphy
 from epandda import occurrences
 from epandda import query
+import sys
+import os
 
+# add current directory to path
+sys.path.append(os.getcwd())
 
+# load config file with database credentials, Etc.
 config = json.load(open('./config.json'));
 
 # Init
