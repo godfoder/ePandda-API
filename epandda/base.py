@@ -7,6 +7,9 @@ from bson.json_util import dumps
 import datetime
 import importlib
 import inspect
+from sources import idigbio
+from sources import paleobio
+import re
 
 #
 # Base class for API resource
@@ -27,7 +30,17 @@ class baseResource(Resource):
         self.params = None
         self.paramCount = 0
 
+        self.fields = {
+            "idigbio": [],
+            "paleobio": []
+        }
+
         self.returnResponse = True
+
+        self.sources = {
+            "idigbio": idigbio.idigbio(),
+            "paleobio": paleobio.paleobio()
+        }
 
     #
     # Return request object
@@ -40,6 +53,10 @@ class baseResource(Resource):
     #
     def resolveReferences(self, data):
         resolved_references = {}
+
+        idigbio_fields = self.getFieldsForSource("idigbio", True)
+        paleobio_fields = self.getFieldsForSource("paleobio", True)
+
         for item in data:
             # resolve idigbio refs
             ids = map(lambda id: ObjectId(id), item["matches"]["idigbio"])
@@ -47,7 +64,15 @@ class baseResource(Resource):
 
             resolved = []
             for mitem in m:
-                resolved.append({"uuid": mitem['idigbio:uuid'], "url": "https://www.idigbio.org/portal/records/" + mitem['idigbio:uuid']})
+                row = {"uuid": mitem['idigbio:uuid'], "url": "https://www.idigbio.org/portal/records/" + mitem['idigbio:uuid']}
+
+                if idigbio_fields is not None:
+                    for f in idigbio_fields:
+                            if f in mitem:
+                                row[f] = mitem[f]
+
+                resolved.append(row)
+
             resolved_references["idigbio_resolved"] = resolved
 
             # resolve pbdb refs
@@ -56,7 +81,15 @@ class baseResource(Resource):
 
             resolved = []
             for mitem in m:
-                resolved.append('https://paleobiodb.org/data1.2/occs/single.json?id=' + mitem['occurrence_no'] + '&show=full')
+                row = {"url": 'https://paleobiodb.org/data1.2/occs/single.json?id=' + mitem['occurrence_no'] + '&show=full' }
+
+                if paleobio_fields is not None:
+                    for f in paleobio_fields:
+                            if f in mitem:
+                                row[f] = mitem[f]
+
+                resolved.append(row)
+
             resolved_references["pbdb_resolved"] = resolved
 
         return resolved_references
@@ -101,6 +134,10 @@ class baseResource(Resource):
         desc.append({"name": "offset"})
         desc.append({"name": "limit"})
 
+        # always pull in source field lists
+        desc.append({"name": "idigbio_fields"})
+        desc.append({"name": "paleobio_fields"})
+
         self.params = {}
 
         c = 0
@@ -136,6 +173,21 @@ class baseResource(Resource):
         self.paramCount = c
 
         return self.params
+
+    #
+    # Validate parameter values
+    #
+    def getFieldsForSource(self, source, defaultToAll=False):
+        if source in self.sources:
+            fields_available_in_source = self.sources[source].availableFields()
+            if source + "_fields" in self.params and self.params[source + "_fields"] is not None and len(self.params[source + "_fields"]) > 0:
+                fields = re.split(",; ", self.params[source + "_fields"])
+                return list(set(fields) & set(fields_available_in_source))
+            elif defaultToAll:
+                return fields_available_in_source
+
+        return None
+
 
     #
     # Validate parameter values

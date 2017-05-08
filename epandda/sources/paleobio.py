@@ -1,4 +1,4 @@
-class pbdb:
+class paleobio:
     def dbName(self):
         return "test"
 
