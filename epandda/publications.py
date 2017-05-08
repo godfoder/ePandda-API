@@ -14,7 +14,7 @@ parser.add_argument('locality', type=str, help='Locality name to filter describe
 #
 #
 #
-class pubs(mongoBasedResource):
+class publications(mongoBasedResource):
     def process(self):
 
         # Required

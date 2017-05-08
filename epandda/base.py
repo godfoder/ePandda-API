@@ -58,7 +58,13 @@ class baseResource(Resource):
         return resolved_references
 
     #
-    # params = list of param keys
+    # Get request parameters. Only parameters declared in the endpoint's description will be
+    # returned, along with standard control parameters like offset and limit.
+    #
+    # If a parameter is not set it will be returned as None.
+    #
+    # If an error occurs while parsing parameters (Eg. a required parameter is missing; no parameters are set)
+    # an exception will be raised.
     #
     def getParams(self):
         desc = self.description()['params'][:]
@@ -109,6 +115,22 @@ class baseResource(Resource):
             raise Exception(errors)
 
         return self.params
+
+    #
+    # Return query list from submitted multi-query JSON blob
+    # An exception will be raised if the query list is not set or empty
+    #
+    def getQueryList(self):
+        r = self.getRequest()
+        r_as_json = request.get_json(silent=True)
+
+        if (r_as_json is None):
+            raise Exception({"GENERAL": "Query parameters are not set"})
+
+        if "queries" in r_as_json and type(r_as_json['queries']) is list and len(r_as_json['queries']) > 0:
+            return r_as_json['queries']
+
+        raise Exception({"GENERAL": "Query list is empty or not set"})
 
     #
     # Get row offset for returned result set
@@ -250,6 +272,20 @@ class baseResource(Resource):
 
         return Response(response=json.dumps(resp, sort_keys=True, indent=4, separators=(',', ': ')).encode('utf8'),
                         status=status_code, mimetype=mime_type)
+
+    #
+    #
+    #
+    def loadEndpoint(endpoint):
+        try:
+            module = importlib.import_module('widgets.{0}'.format(widget_type))
+            for x in dir(module):
+                obj = getattr(module, x)
+
+                if inspect.isclass(obj) and issubclass(obj, WidgetAPI) and obj is not WidgetAPI:
+                    return obj
+        except ImportError:
+            return None
 
     #
     # Respond with description of endpoint. Used when user hits an endpoint with no parameters.

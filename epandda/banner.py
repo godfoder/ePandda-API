@@ -5,7 +5,7 @@ from base import baseResource
 #
 # Emit API banner
 #
-class show(baseResource):
+class banner(baseResource):
     def process(self):
 
         routes = []

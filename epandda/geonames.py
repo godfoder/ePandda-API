@@ -11,7 +11,7 @@ parser.add_argument('locality', type=str, help='Locality name to to search geona
 #
 #
 #
-class geoname(mongoBasedResource):
+class geonames(mongoBasedResource):
     def process(self):
         # Mongodb index for localities
         lindex = self.client.test.localityIndex   
