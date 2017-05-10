@@ -14,7 +14,10 @@ parser.add_argument('locality', type=str, help='Locality name to to search geona
 class geonames(mongoBasedResource):
     def process(self):
         # Mongodb index for localities
-        lindex = self.client.test.localityIndex   
+        lindex = self.client.test.localityIndex
+
+        # Mongodb index for geoPoints
+        pindex = self.client.test.geoPointIndex
 
         # Mongodb gridFS instance
         grid = gridfs.GridFS(self.client.test)                   
@@ -29,7 +32,7 @@ class geonames(mongoBasedResource):
         limit = self.limit()
 
         if self.paramCount > 0:
-          criteria = {'endpoint': 'geoname', 'parameters': {}, 'matchTerms': {'stateProvinceNames': [], 'countryNames': [], 'countyNames': [], 'localityNames': [], 'originalStates': [], 'originalCountries': [], 'originalCounties': [], 'originalLocalities': []}}
+          criteria = {'endpoint': 'geoname', 'parameters': {}, 'matchPoints': [], 'matchTerms': {'stateProvinceNames': [], 'countryNames': [], 'countyNames': [], 'localityNames': [], 'originalStates': [], 'originalCountries': [], 'originalCounties': [], 'originalLocalities': []}}
           geoQuery = []
 
           for p in ['countryName', 'countryCode', 'locality', 'stateProvinceName', 'county']:
@@ -37,57 +40,99 @@ class geonames(mongoBasedResource):
                   criteria['parameters'][p] = params[p]
                   geoQuery.append({p: params[p]})
 
-          if (len(geoQuery) == 0):
+          latLngQuery = []
+          if params['geoPoint']:
+
+            criteria['parameters']['geoPoint'] = params['geoPoint']
+            point = params['geoPoint'].split(", ")
+            point = [float(point[0]), float(point[1])]
+            if 'geoRadius' in params:
+              criteria['parameters']['geoRadius'] = params['geoRadius']
+              radius = int(params['geoRadius'])
+
+            else:
+                # Set a default distance from the provided point, 10,000m
+                radius = 10000
+            latLngQuery = {'coordinates': {'$near': {'$geometry': {'type': "Point", 'coordinates': point}, '$maxDistance': radius}}}
+
+          if (len(geoQuery) == 0 and 'geoPoint' not in params):
             return self.respondWithError({"GENERAL": "No parameters specified"})
-
-          res = lindex.find({'$and': geoQuery})
-
+          
+          if len(geoQuery) > 0:
+            res = lindex.find({'$and': geoQuery})
+          else:
+            res = None
+          if params['geoPoint']:
+            geoRes = pindex.find(latLngQuery)
+          else:
+            geoRes = None
           d = []
           matches = {'idigbio': [], 'pbdb': []}
           idbCount = 0
           pbdbCount = 0
-          for i in res:
-            if i['countryName'] not in criteria['matchTerms']['countryNames']:
-              criteria['matchTerms']['countryNames'].append(i['countryName'])
-            if i['stateProvinceName'] not in criteria['matchTerms']['stateProvinceNames']:
-              criteria['matchTerms']['stateProvinceNames'].append(i['stateProvinceName'])
-            if i['county'] not in criteria['matchTerms']['countyNames']:
-              criteria['matchTerms']['countyNames'].append(i['county'])
-            if 'locality' in i:
-              if i['locality'] not in criteria['matchTerms']['localityNames']:
-                criteria['matchTerms']['localityNames'].append(i['locality'])
-            for origState in i['originalStateProvinceName']:
-              if origState not in criteria['matchTerms']['originalStates']:
-                criteria['matchTerms']['originalStates'].append(origState)
-            for origCountry in i['originalCountryName']:
-              if origCountry not in criteria['matchTerms']['originalCountries']:
-                criteria['matchTerms']['originalCountries'].append(origCountry)
-            for origCounty in i['original_county']:
-              if origCounty not in criteria['matchTerms']['originalCounties']:
-                criteria['matchTerms']['originalCounties'].append(origCounty)
-            if 'original_locality' in i:
-              for origLocality in i['original_locality']:
-                if origCounty not in criteria['matchTerms']['originalLocalities']:
-                  criteria['matchTerms']['originalLocalities'].append(origLocality)
-            if 'pbdbGridFile' in i:
-              pbdbGrid = i['pbdbGridFile']
-              pbdb_doc = grid.get(pbdbGrid)
-              pbdb_matches = json.loads(pbdb_doc.read())
-              matches['pbdb'] = matches['pbdb'] + pbdb_matches
-              pbdbCount += len(pbdb_matches)
-            
-            if 'idbGridFile' in i:
-              idbGrid = i['idbGridFile']
-              idb_doc = grid.get(idbGrid)
-              idb_matches = json.loads(idb_doc.read())
-              matches['idigbio'] = matches['idigbio'] + idb_matches
-              idbCount += len(idb_matches)
-              #terms = i['original_terms']
-              #terms.append(locality)
-              #item = {"terms": terms, "matches": {"pbdb": i['pbdb_data'], "idigbio": i['idb_data']}}
-              #d.append(item)
+          if res:
+            for i in res:
+              if i['countryName'] not in criteria['matchTerms']['countryNames']:
+                criteria['matchTerms']['countryNames'].append(i['countryName'])
+              if i['stateProvinceName'] not in criteria['matchTerms']['stateProvinceNames']:
+                criteria['matchTerms']['stateProvinceNames'].append(i['stateProvinceName'])
+              if i['county'] not in criteria['matchTerms']['countyNames']:
+                criteria['matchTerms']['countyNames'].append(i['county'])
+              if 'locality' in i:
+                if i['locality'] not in criteria['matchTerms']['localityNames']:
+                  criteria['matchTerms']['localityNames'].append(i['locality'])
+              for origState in i['originalStateProvinceName']:
+                if origState not in criteria['matchTerms']['originalStates']:
+                  criteria['matchTerms']['originalStates'].append(origState)
+              for origCountry in i['originalCountryName']:
+                if origCountry not in criteria['matchTerms']['originalCountries']:
+                  criteria['matchTerms']['originalCountries'].append(origCountry)
+              for origCounty in i['original_county']:
+                if origCounty not in criteria['matchTerms']['originalCounties']:
+                  criteria['matchTerms']['originalCounties'].append(origCounty)
+              if 'original_locality' in i:
+                for origLocality in i['original_locality']:
+                  if origCounty not in criteria['matchTerms']['originalLocalities']:
+                    criteria['matchTerms']['originalLocalities'].append(origLocality)
+              if 'pbdbGridFile' in i:
+                pbdbGrid = i['pbdbGridFile']
+                pbdb_doc = grid.get(pbdbGrid)
+                pbdb_matches = json.loads(pbdb_doc.read())
+                matches['pbdb'] = matches['pbdb'] + pbdb_matches
+                
+              if 'idbGridFile' in i:
+                idbGrid = i['idbGridFile']
+                idb_doc = grid.get(idbGrid)
+                idb_matches = json.loads(idb_doc.read())
+                matches['idigbio'] = matches['idigbio'] + idb_matches
+                #terms = i['original_terms']
+                #terms.append(locality)
+                #item = {"terms": terms, "matches": {"pbdb": i['pbdb_data'], "idigbio": i['idb_data']}}
+                #d.append(item)
+          geoMatches = {'idigbio': [], 'pbdb': []}
+          if geoRes:
+            for r in geoRes:
+              criteria['matchPoints'].append(r['coordinates']['coordinates'])
+              if 'idb_data' in r:
+                for spec in r['idb_data'][0]:
+                  geoMatches['idigbio'].append(spec)
+              if 'pbdb_data' in r:
+                for spec in r['pbdb_data'][0]:
+                  geoMatches['pbdb'].append(spec)
 
-          item = {'matches': matches}
+          finalMatches = {'idigbio': [], 'pbdb': []}
+          if len(geoMatches['idigbio']) > 0 and len(matches['idigbio']) > 0:
+            finalMatches['idigbio'] = set(matches['idigbio']) & set(geoMatches['idigbio'])
+          else: 
+            finalMatches['idigbio'] = geoMatches['idigbio'] + matches['idigbio']
+          idbCount = len(finalMatches['idigbio'])
+          if len(geoMatches['pbdb']) > 0 and len(matches['pbdb']) > 0:
+            finalMatches['pbdb'] = set(matches['pbdb']) & set(geoMatches['pbdb'])
+          else: 
+            finalMatches['pbdb'] = geoMatches['pbdb'] + matches['pbdb']
+          pbdbCount = len(finalMatches['pbdb'])
+
+          item = {'matches': finalMatches}
           d.append(item)
           d = self.resolveReferences(d)
           #idb_count = len(d['idigbio_resolved'])
@@ -155,13 +200,12 @@ class geonames(mongoBasedResource):
                 "name": "geoPoint",
                 "type": "text",
                 "required": False,
-                "description": "The Latitude, Longitude to search on. Provide a comma separated string"
+                "description": "The Longitude, Latitude to search on. Provide a comma separated string. IMPORTANT geoJSON requries LONGITUDE first."
             },
             {
-                "name": "geoUncertainty",
+                "name": "geoRadius",
                 "type": "text",
                 "required": False,
-                "description": "The distance from the provided geoPoint to match specimens within. The distance provided will be used to draw a circle around the geoPoint"
+                "description": "The distance from the provided geoPoint to search within, in meters"
             }
         ]}
-
