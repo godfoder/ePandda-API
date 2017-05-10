@@ -88,7 +88,7 @@ class publications(mongoBasedResource):
                     "name": "county",
                     "type": "text",
                     "required": False,
-                    "descripiton": "The county to search for scientific_name and publication references"
+                    "description": "The county to search for scientific_name and publication references"
                 },
                 {
                     "name": "locality",
