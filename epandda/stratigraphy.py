@@ -1,5 +1,4 @@
 from mongo import mongoBasedResource
-from response_handler import response_handler
 from flask_restful import reqparse
 
 parser = reqparse.RequestParser()
@@ -77,8 +76,7 @@ class stratigraphy(mongoBasedResource):
               item = {"terms": terms, "matches": {"pbdb": i['pbdb_data'], "idigbio": i['idb_data']}}
               d.append(item)
 
-          d = self.resolveReferences(d)
-          resp = self.toJson(d)
+          resp = {'data': self.resolveReferences(d)}
 
         else:
 

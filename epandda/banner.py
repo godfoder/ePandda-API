@@ -1,27 +1,29 @@
 from flask_restful import Resource, Api
 from flask import current_app, url_for
-from response_handler import response_handler
+from base import baseResource
 
 #
 # Emit API banner
 #
-class show(Resource):
-    def get(self):
+class banner(baseResource):
+    def process(self):
 
         routes = []
         for rule in current_app.url_map.iter_rules():
+          if (rule.endpoint == 'static'):
+              continue
 
           options = {}
           for arg in rule.arguments:
             options[arg] = "[{0}]".format(arg)
 
           url = url_for(rule.endpoint, **options)
-          routes.append({'url': url, 'methods': ",".join(rule.methods) }) 
+          endpoint = self.loadEndpoint(rule.endpoint)
 
-        resp = {
-          'endpoint_description': 'ePANDDA REST API guide',
+          desc = endpoint.description();
+          routes.append({'url': url, 'methods': ",".join(rule.methods), 'name': desc['name'], 'description': desc['description'] })
+
+        return self.respond({
+          'description': 'ePANDDA REST API guide',
           'routes': routes
-        }
-
-        return response_handler( resp )
-        
+        }, "routes")

@@ -11,13 +11,19 @@ from flask_restful import Resource, Api
 from werkzeug.security import safe_str_cmp
 
 from epandda import banner
-from epandda import geo
+from epandda import geonames
 from epandda import stats
-from epandda import biblio
-from epandda import strat
-from epandda import occ
+from epandda import publications
+from epandda import stratigraphy
+from epandda import occurrences
+from epandda import query
+import sys
+import os
 
+# add current directory to path
+sys.path.append(os.getcwd())
 
+# load config file with database credentials, Etc.
 config = json.load(open('./config.json'));
 
 # Init
@@ -28,13 +34,13 @@ api = Api(app)
 
 
 # emit banner
-api.add_resource(banner.show, '/')
-api.add_resource(geo.geoname, '/geoname')
+api.add_resource(banner.banner, '/')
+api.add_resource(query.query, '/query')
+api.add_resource(geonames.geonames, '/geonames')
 api.add_resource(stats.stats, '/stats')
-api.add_resource(biblio.biblio, '/bibliographic')
-api.add_resource(strat.stratigraphy, '/stratigraphy')
-api.add_resource(occ.occurrences, '/occurrence')
+api.add_resource(publications.publications, '/publications')
+api.add_resource(stratigraphy.stratigraphy, '/stratigraphy')
+api.add_resource(occurrences.occurrences, '/occurrences')
 
 if __name__ == '__main__':
-  app.run(host = '0.0.0.0')
-
+  app.run()
