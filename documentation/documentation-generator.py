@@ -35,7 +35,7 @@ if banner.status_code == 200:
 			if len(endpoint['url'][1:]) < 1:
 				continue
 			params = description.json()
-			desc = params['description'] if 'description' in params else 'This is a temporaru description'
+			desc = params['description'] if 'description' in params else 'This is a temporary description'
 			point_row = '''
 <div class="row">
 	<div class="col-12-s">
@@ -47,6 +47,7 @@ if banner.status_code == 200:
 		<table class="parameterTable">
 			<tr>
 				<th>Name</th>
+				<th>Label</th>
 				<th>Type</th>
 				<th>Required?</th>
 				<th>Description</th>
@@ -58,18 +59,20 @@ if banner.status_code == 200:
 				
 				for param in params['params']:
 					print param
-					param_name = param['name'] if 'name' in param else '[NO NAME]'
-					param_type = param['type'] if 'type' in param else '[NO TYPE]'
-					param_req = param['required'] if 'required' in param else '[TRUE/FALSE]'
-					param_desc = param['description'] if 'description' in param else '[NO DESCRIPTION]'
+					param_name = param['name'] if 'name' in param else ''
+					param_type = param['type'] if 'type' in param else ''
+					param_label = param['label'] if 'label' in param else ''
+					param_req = param['required'] if 'required' in param else ''
+					param_desc = param['description'] if 'description' in param else ''
 					param_row = '''
 			<tr>
 				<td>{0}</td>
 				<td>{1}</td>
 				<td>{2}</td>
 				<td>{3}</td>
+				<td>{4}</td>
 			</tr>
-					'''.format(param_name, param_type, param_req, param_desc)
+					'''.format(param_name, param_label, param_type, param_req, param_desc)
 					rows.append(param_row)
 				
 				table_rows = ' '.join(rows)

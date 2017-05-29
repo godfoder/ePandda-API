@@ -25,7 +25,7 @@ class baseResource(Resource):
 
         self.client = MongoClient("mongodb://" + self.config['mongodb_user'] + ":" + self.config['mongodb_password'] + "@" + self.config['mongodb_host'])
         self.idigbio = self.client.idigbio.occurrence
-        self.pbdb = self.client.test.pbdb_flat_index
+        self.pbdb = self.client.pbdb.pbdb_flat_index
 
         self.params = None
         self.paramCount = 0
@@ -366,7 +366,8 @@ class baseResource(Resource):
 
         if "params" in return_object:
             resp['params'] = return_object['params']
-
+        if 'media' in return_object:
+            resp['media'] = return_object['media']
         if self.returnResponse:
             return Response(json.dumps(resp, sort_keys=True, indent=4, separators=(',', ': ')).encode('utf8'), status=status_code, mimetype=mime_type)
         else:
