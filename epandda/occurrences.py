@@ -162,7 +162,6 @@ class occurrences(mongoBasedResource):
 		else:
 			return self.respondWithDescription()
 
-
 	def description(self):
 		return {
 			'name': 'Occurrence index',

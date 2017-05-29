@@ -246,7 +246,7 @@ class baseResource(Resource):
             'maintainer': 'Orphan Pandda',
             'maintainer_email': 'orphan@epandda.org',
             'name': '[NO NAME]',
-            'description': '[NO DESCRIPTION]',
+            'description': '[NO DESCRIPTION]' + str(self),
             'params': [{
                 "name": "sample_parameter",
                 "type": "text",
@@ -374,6 +374,12 @@ class baseResource(Resource):
             return resp
 
     #
+    # Determine if method is defined in a subclass.
+    #
+    def isMethod(self, obj, name):
+        return hasattr(obj, name) and inspect.ismethod(getattr(obj, name))
+
+    #
     #
     #
     def loadEndpoint(self, endpoint):
@@ -382,7 +388,7 @@ class baseResource(Resource):
             for x in dir(module):
                 obj = getattr(module, x)
 
-                if inspect.isclass(obj) and issubclass(obj, Resource) and obj is not Resource:
+                if inspect.isclass(obj) and issubclass(obj, Resource) and obj is not Resource and self.isMethod(obj, "process"):
                     return obj()
             return None
         except ImportError as e:

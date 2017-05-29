@@ -52,7 +52,7 @@ class publications(mongoBasedResource):
             'name': 'Publication index',
             'maintainer': 'Jon Lauters',
             'maintainer_email': 'jon@epandda.org',
-            'description': 'Returns specimen occurrence and publication records for a given scientific name. results can be filtered by the optional params',
+            'description': 'Returns specimen occurrence and publication records for a given scientific name. Results may be filtered using the available parameters.',
             'params': [
                 {
                     "name": "scientific_name",

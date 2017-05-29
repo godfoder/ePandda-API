@@ -57,7 +57,7 @@ class stats(baseResource):
             'name': 'API statistics',
             'maintainer': 'Michael Benowitz',
             'maintainer_email': 'michael@epandda.org',
-            'description': 'Returns general API statistical information',
+            'description': '(Sometimes) interesting API statistics',
             'params': [
             {
                 "name": "stateProvinces",

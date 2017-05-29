@@ -20,6 +20,9 @@ class banner(baseResource):
           url = url_for(rule.endpoint, **options)
           endpoint = self.loadEndpoint(rule.endpoint)
 
+          if endpoint is None:
+              continue
+
           desc = endpoint.description();
           routes.append({'url': url, 'methods': ",".join(rule.methods), 'name': desc['name'], 'description': desc['description'] })
 
@@ -27,3 +30,12 @@ class banner(baseResource):
           'description': 'ePANDDA REST API guide',
           'routes': routes
         }, "routes")
+
+    def description(self):
+        return {
+            'name': 'API Info',
+            'maintainer': 'Seth Kaufman',
+            'maintainer_email': 'seth@epandda.org',
+            'description': 'Summary of available endpoints',
+            'params': []
+        }

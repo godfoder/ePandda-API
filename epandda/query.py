@@ -29,3 +29,19 @@ class query(baseResource):
         return self.respond({
           'queries': queries
         }, "queries")
+    def description(self):
+        return {
+            'name': 'Query builder',
+            'maintainer': 'Seth Kaufman',
+            'maintainer_email': 'seth@epandda.org',
+            'description': 'Generates result sets based upon combinations of endpoint queries',
+            'params': [
+                {
+                    "name": "xxx",
+                    "label": "xxx",
+                    "type": "text",
+                    "required": False,
+                    "description": "xxx"
+                }
+            ]
+        }
