@@ -18,7 +18,7 @@ class geonames(mongoBasedResource):
 		lindex = self.client.endpoints.localityIndex2
 
 		# Mongodb index for geoPoints
-		pindex = self.client.endpoints.geoPointIndex
+		pindex = self.client.endpoints.geoPointIndex2
 
 		# Mongodb gridFS instance
 		grid = gridfs.GridFS(self.client.endpoints)                   
@@ -31,20 +31,27 @@ class geonames(mongoBasedResource):
 		# offset and limit returned as ints with default if not set
 		offset = self.offset()
 		limit = self.limit()
-
+		
+		if limit < 1:
+			limit = 100
+		
 		if self.paramCount > 0:
 			criteria = {'endpoint': 'geoname', 'parameters': {}, 'matchPoints': [], 'matchTerms': {'stateProvinceNames': [], 'countryNames': [], 'countyNames': [], 'localityNames': [], 'originalStates': [], 'originalCountries': [], 'originalCounties': [], 'originalLocalities': []}}
 			geoQuery = []
 
-			for p in ['countryName', 'countryCode', 'locality', 'stateProvinceName', 'county']:
+			for p in ['countryName', 'countryCode', 'locality', 'stateProvinceName', 'stateProvinceCode', 'county']:
 				if (params[p]):
 					criteria['parameters'][p] = params[p]
 					geoQuery.append({p: params[p]})
-
+			
+			if(params['geolocation']):
+				criteria['parameters']['geolocation'] = params['geolocation']
+				geoQuery.append({'$text': {'$search': '"' + params['geolocation'] + '"', '$caseSensitive': False}})
+			
 			latLngQuery = []
 			if params['geoPoint']:
 				criteria['parameters']['geoPoint'] = params['geoPoint']
-				point = params['geoPoint'].split(", ")
+				point = params['geoPoint'].split(",")
 				point = [float(point[0]), float(point[1])]
 				if params['geoRadius']:
 					criteria['parameters']['geoRadius'] = params['geoRadius']
@@ -52,8 +59,8 @@ class geonames(mongoBasedResource):
 				else:
 					# Set a default distance from the provided point, 10,000m
 					radius = 10000
-					latLngQuery = {'coordinates': {'$near': {'$geometry': {'type': "Point", 'coordinates': point}, '$maxDistance': radius}}}
-
+				latLngQuery = {'coordinates': {'$near': {'$geometry': {'type': "Point", 'coordinates': point}, '$maxDistance': radius}}}
+		
 			if (len(geoQuery) == 0 and 'geoPoint' not in params):
 				return self.respondWithError({"GENERAL": "No parameters specified"})
 				
@@ -145,7 +152,7 @@ class geonames(mongoBasedResource):
 			else: 
 				finalMatches['pbdb'] = geoMatches['pbdb'] + matches['pbdb']
 			pbdbCount = len(finalMatches['pbdb'])
-
+			resolveSet = {'idigbio': finalMatches['idigbio'][offset:limit], 'pbdb':  finalMatches['pbdb'][offset:limit]}
 			item = {'matches': finalMatches}
 			d.append(item)
 			d = self.resolveReferences(d)
