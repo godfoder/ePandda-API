@@ -52,7 +52,20 @@ class geonames(mongoBasedResource):
 			if params['geoPoint']:
 				criteria['parameters']['geoPoint'] = params['geoPoint']
 				point = params['geoPoint'].split(",")
-				point = [float(point[0]), float(point[1])]
+				
+				try:
+					lon = float(point[0])
+					lat = float(point[1])
+				except Exception as e:
+					return self.respondWithError({"GENERAL": "Invalid coordinates"})
+				
+				if lon < -180 or lon > 180:
+					return self.respondWithError({"GENERAL": "Longitude is invalid"})
+					
+				if lat < -90 or lat > 90:
+					return self.respondWithError({"GENERAL": "Latitude is invalid"})
+				
+				point = [lon, lat]
 				if params['geoRadius']:
 					criteria['parameters']['geoRadius'] = params['geoRadius']
 					radius = int(params['geoRadius'])
@@ -60,7 +73,6 @@ class geonames(mongoBasedResource):
 					# Set a default distance from the provided point, 10,000m
 					radius = 10000
 				latLngQuery = {'coordinates': {'$near': {'$geometry': {'type': "Point", 'coordinates': point}, '$maxDistance': radius}}}
-		
 			if (len(geoQuery) == 0 and 'geoPoint' not in params):
 				return self.respondWithError({"GENERAL": "No parameters specified"})
 				
