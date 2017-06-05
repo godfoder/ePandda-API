@@ -15,7 +15,7 @@ parser.add_argument('locality', type=str, help='Locality name to to search geona
 class geonames(mongoBasedResource):
 	def process(self):
 		# Mongodb index for localities
-		lindex = self.client.endpoints.localityIndex2
+		lindex = self.client.endpoints.localityIndexV3
 
 		# Mongodb index for geoPoints
 		pindex = self.client.endpoints.geoPointIndex2
@@ -54,8 +54,8 @@ class geonames(mongoBasedResource):
 				point = params['geoPoint'].split(",")
 				
 				try:
-					lon = float(point[0])
-					lat = float(point[1])
+					lat = float(point[0])
+					lon = float(point[1])
 				except Exception as e:
 					return self.respondWithError({"GENERAL": "Invalid coordinates"})
 				
@@ -168,12 +168,9 @@ class geonames(mongoBasedResource):
 			item = {'matches': finalMatches}
 			d.append(item)
 			d = self.resolveReferences(d)
-			#idb_count = len(d['idigbio_resolved'])
-			#pbdb_count = len(d['pbdb_resolved'])
+			
 			counts = {'totalCount': idbCount + pbdbCount, 'idbCount': idbCount, 'pbdbCount': pbdbCount}
 
-				
-			d['pbdb_resolved'] = d['pbdb_resolved'][offset:limit]
 
 			return self.respond({'counts': counts, 'results': d, 'criteria': criteria})
 		else:
@@ -237,16 +234,16 @@ class geonames(mongoBasedResource):
 				},
 				{
 					"name": "geoPoint",
-					"label": "Geographic Point (Longitude, Latitude)",
+					"label": "Geographic Point (Latitude, Longitude)",
 					"type": "text",
 					"required": False,
-					"description": "The Longitude, Latitude to search on. Provide a comma separated string. IMPORTANT geoJSON requries LONGITUDE first."
+					"description": "The Latitude, Longitude to search on. Provide a comma separated string with no space (e.g. '-103.2,29.2')."
 				},
 				{
 					"name": "geoRadius",
 					"label": "Distance from Geographic Point in Meters",
 					"type": "text",
 					"required": False,
-					"description": "The distance from the provided geoPoint to search within, in meters"
+					"description": "The distance from the provided geoPoint to search within, in meters. Provide only the distance with no units"
 				}
 			]}

@@ -6,7 +6,7 @@ from base import baseResource
 class stats(baseResource):
     def process(self):
         
-        localityFields = {'localities': 'locality', 'counties': 'county', 'stateProvinces': 'stateProvinceName', 'countries': 'countryName'}
+        localityFields = {'localities': 'originalLocality', 'counties': 'county', 'stateProvinces': 'stateProvinceName', 'countries': 'countryName'}
         # Get any supplied parameters
         # There are no required parameters at this time 
         params = self.getParams()
@@ -17,7 +17,7 @@ class stats(baseResource):
             endpoints = self.client.endpoints
             response = {}
             if params['totalRecords']:
-                pbdbIndex = pbdb.pbdb_flat_index
+                pbdbIndex = pbdb.pbdb_occurrences
                 idbIndex = idb.occurrence
                 pbdbCount = pbdbIndex.find().count()
                 idbCount = idbIndex.find().count()
@@ -27,22 +27,23 @@ class stats(baseResource):
                 response['specimens'] = idbCount
                 response['occurrences'] = pbdbCount
            
-            localityIndex = endpoints.localityIndex
+            localityIndex = endpoints.localityIndexV3
             for place in ['countries', 'stateProvinces', 'counties', 'localities']:
             	if params[place]:
             		placeTerm = localityFields[place]
-            		placeCount = len(localityIndex.distinct(placeTerm))
+            		#placeCount = len(list(localityIndex.aggregate([{'$group': {'_id': {'localities': '$' + placeTerm}}}])))
+                	placeCount = localityIndex.count()
                 	criteria['parameters'].append(place)
                 	response[place] = placeCount
 
             if params['geoPoints']:
-                geoPointIndex = endpoints.geoPointIndex
+                geoPointIndex = endpoints.geoPointIndex2
                 geoCount = geoPointIndex.find().count()
                 criteria['parameters'].append('geoPoints')
                 response['geoPoints'] = geoCount
            		
             if params['taxonomies']:
-                taxonIndex = endpoints.taxonIndex
+                taxonIndex = endpoints.taxonIndex2
                 taxonCount = taxonIndex.find().count()
                 criteria['parameters'].append('taxonomies')
                 response['taxonomies'] = taxonCount

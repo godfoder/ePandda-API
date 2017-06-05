@@ -17,9 +17,9 @@ parser.add_argument('institution_code', type=str, help='The abbreviated code sub
 class occurrences(mongoBasedResource):
 	def process(self):
 	
-		lindex = self.client.endpoints.localityIndex2                       # Mongodb index for localities
-		tindex = self.client.endpoints.taxonIndex						   # Mongodb index for taxonomies
-		
+		lindex = self.client.endpoints.localityIndexV3                       # Mongodb index for localities
+		tindex = self.client.endpoints.taxonIndex2						     # Mongodb index for taxa
+		cindex = self.client.endpoints.chronoStratIndex3					 # Mongodb index for chronostratigraphy
 		grid = gridfs.GridFS(self.client.endpoints)                   
 
 		# returns dictionary of params as defined in endpoint description
@@ -30,9 +30,10 @@ class occurrences(mongoBasedResource):
 		limit = self.limit()
 
 		if self.paramCount > 0:
+			chronoRes = None
 			localityRes = None
 			res = None
-			criteria = {'endpoint': 'taxonomy', 'parameters': {}, 'matchTerms': {'scientificNames': [], 'stateProvinceNames': [], 'countryNames': [], 'countyNames': [], 'localityNames': [], 'originalStates': [], 'originalCountries': [], 'originalCounties': [], 'originalLocalities': []}}
+			criteria = {'endpoint': 'taxonomy', 'parameters': {}, 'matchTerms': {'scientificNames': [], 'stateProvinceNames': [], 'countryNames': [], 'countyNames': [], 'localityNames': [], 'originalStates': [], 'originalCountries': [], 'originalCounties': [], 'originalLocalities': [], 'chronostratigraphy': []}}
 			taxonQuery = []
 			localityQuery = []
 			instQuery = []
@@ -45,12 +46,18 @@ class occurrences(mongoBasedResource):
 				locality = params['locality']
 				localityRes = lindex.find({'$text': {'$search': '"' + locality + '"'}})
 			
+			if params['chronostratigraphy']:
+				chronoStrat = params['chronostratigraphy']
+				chronoRes = cindex.find({'$text': {'$search': '"' + chronoStrat + '"'}})
+			
 			# TODO: Add Filtering for locality, period and institution
 			d = []
 			matches = {'idigbio': [], 'pbdb': []}
 			taxonMatches = {'idigbio': [], 'pbdb': []}
+			chronoMatches = {'idigbio': [], 'pbdb': []}
 			idbCount = 0
 			pbdbCount = 0
+			# taxonomy
 			if res:
 				for i in res:
 					for i in res:
@@ -88,6 +95,8 @@ class occurrences(mongoBasedResource):
 								idb_doc = grid.get(i['idbGridFile'])
 								idb_matches = json.loads(idb_doc.read())
 								taxonMatches['idigbio'] = taxonMatches['idigbio'] + idb_matches
+			
+			# locality
 			geoMatches = {'idigbio': [], 'pbdb': []}
 			if localityRes:
 				for i in localityRes:
@@ -140,16 +149,62 @@ class occurrences(mongoBasedResource):
 							idb_doc = grid.get(i['idbGridFile'])
 							idb_matches = json.loads(idb_doc.read())
 							geoMatches['idigbio'] = geoMatches['idigbio'] + idb_matches
-				
+			
+			# chronostratigraphy
+			if chronoRes:
+				for i in chronoRes:
+					temp_doc = {}
+					for level in ['lowStage', 'highStage', 'lowSeries', 'highSeries', 'lowSystem', 'highSystem', 'lowErathem', 'highErathem', 'upperChronostratigraphy', 'lowerChronostratigraphy']:
+						if level in i:
+							temp_doc[level] = i[level]
+					criteria['matchTerms']['chronostratigraphy'].append(temp_doc)
+					
+					if 'pbdbGridFile' in i:
+						pbdbGrids = i['pbdbGridFile']
+						for file in pbdbGrids:
+							pbdb_doc = grid.get(file)
+							pbdb_matches = json.loads(pbdb_doc.read())
+							chronoMatches['pbdb'] = chronoMatches['pbdb'] + pbdb_matches
+
+					if 'idbGridFile' in i:
+						if type(i['idbGridFile']) is list:
+							idbGrids = i['idbGridFile']
+							for file in idbGrids:
+								idb_doc = grid.get(file)
+								idb_matches = json.loads(idb_doc.read())
+								chronoMatches['idigbio'] = chronoMatches['idigbio'] + idb_matches
+						else:
+							idb_doc = grid.get(i['idbGridFile'])
+							idb_matches = json.loads(idb_doc.read())
+							chronoMatches['idigbio'] = chronoMatches['idigbio'] + idb_matches
+			
+			
 			idbGeoSet = set(geoMatches['idigbio'])
 			pbdbGeoSet = set(geoMatches['pbdb'])
 			idbTaxonSet = set(taxonMatches['idigbio'])
 			pbdbTaxonSet = set(taxonMatches['pbdb'])
+			idbChronoSet = set(chronoMatches['idigbio'])
+			pbdbChronoSet = set(chronoMatches['pbdb'])
 			#return {'idbGeo': len(geoMatches['idigbio']), 'pbdbGeo': len(geoMatches['pbdb']), 'idbTaxon': len(taxonMatches['idigbio']), 'pbdbTaxon': len(taxonMatches['pbdb'])}
 			#return {'idbGeo': list(idbGeoSet), 'pbdbGeo': list(pbdbGeoSet), 'idbTaxon': list(idbTaxonSet), 'pbdbTaxon': list(pbdbTaxonSet)}
-			matches['idigbio'] = list(idbGeoSet & idbTaxonSet)
-			matches['pbdb'] = list(pbdbGeoSet & pbdbTaxonSet)
-			return matches
+			if len(idbGeoSet) > 0 and len(idbChronoSet) > 0:
+				matches['idigbio'] = list(idbGeoSet & idbTaxonSet & idbChronoSet)
+			elif len(idbGeoSet) > 0:
+				matches['idigbio'] = list(idbGeoSet & idbTaxonSet)
+			elif len(idbChronoSet) > 0:
+				matches['idigbio'] = list(idbTaxonSet & idbChronoSet)
+			else:
+				matches['idigbio'] = taxonMatches['idigbio']
+			if len(pbdbGeoSet) > 0 and len(pbdbChronoSet) > 0:
+				matches['pbdb'] = list(pbdbGeoSet & pbdbTaxonSet & pbdbChronoSet)
+			elif len(pbdbGeoSet) > 0:
+				matches['pbdb'] = list(pbdbGeoSet & pbdbTaxonSet)
+			elif len(pbdbChronoSet) > 0:
+				matches['pbdb'] = list(pbdbTaxonSet & pbdbChronoSet)
+			else:
+				matches['pbdb'] = taxonMatches['pbdb']	
+			
+			
 			idbCount = len(matches['idigbio'])
 			pbdbCount = len(matches['pbdb'])
 
@@ -172,7 +227,7 @@ class occurrences(mongoBasedResource):
 				{
 					"name": "taxon_name",
 					"type": "text",
-					"required": True,
+					"required": False,
 					"description": "The taxa to search occurrences for"
 				},
 				{
@@ -182,13 +237,15 @@ class occurrences(mongoBasedResource):
 					"description": "The locality name to bound taxonomic occurences to",
 				},
 				{
-					"name": "period",
+					"name": "chronostratigraphy",
 					"type": "text",
+					"required": False, 
 					"description": "The geologic time period to filter taxon occurrences by"
 				},
 				{
 					"name": "institution_code",
 					"type": "text",
+					"required": False,
 					"char_limit": "TBD",
 					"description": "The abbreviated institution code that houses the taxon occurrence specimen"
 				}

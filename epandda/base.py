@@ -25,7 +25,7 @@ class baseResource(Resource):
 
         self.client = MongoClient("mongodb://" + self.config['mongodb_user'] + ":" + self.config['mongodb_password'] + "@" + self.config['mongodb_host'])
         self.idigbio = self.client.idigbio.occurrence
-        self.pbdb = self.client.pbdb.pbdb_flat_index
+        self.pbdb = self.client.pbdb.pbdb_occurrences
 
         self.params = None
         self.paramCount = 0
@@ -52,47 +52,70 @@ class baseResource(Resource):
     # Resolve underlying data source ids (from iDigBio, PBDB, Etc.) to URLs the end-user can use
     #
     def resolveReferences(self, data):
-        resolved_references = {}
+		resolved_references = {"idigbio_resolved" : [], "pbdb_resolved": [] }
 
-        idigbio_fields = self.getFieldsForSource("idigbio", True)
-        paleobio_fields = self.getFieldsForSource("paleobio", True)
+		idigbio_fields = self.getFieldsForSource("idigbio", True)
+		paleobio_fields = self.getFieldsForSource("paleobio", True)
 
-        for item in data:
-            # resolve idigbio refs
-            ids = map(lambda id: ObjectId(id), item["matches"]["idigbio"])
-            m = self.idigbio.find({"_id": {"$in" : ids}})
+		offset = self.offset()
+		limit = self.limit()
 
-            resolved = []
-            for mitem in m:
-                row = {"uuid": mitem['idigbio:uuid'], "url": "https://www.idigbio.org/portal/records/" + mitem['idigbio:uuid']}
+		idigbio_ids = []
+		pbdb_ids = []
 
-                if idigbio_fields is not None:
-                    for f in idigbio_fields:
-                            if f in mitem:
-                                row[f] = mitem[f]
+		for item in data:
+			if len(idigbio_ids) < offset + limit:
+				idigbio_ids = idigbio_ids + item["matches"]["idigbio"]
+	
+			if len(pbdb_ids) < offset + limit:
+				pbdb_ids = pbdb_ids + item["matches"]["pbdb"]
+	
+			if (len(idigbio_ids) >= offset + limit) and (len(pbdb_ids) >= offset + limit):
+				break
 
-                resolved.append(row)
+		if offset > 0:
+			idigbio_ids = idigbio_ids[offset:]
+			pbdb_ids = pbdb_ids[offset:]
+		
+		idigbio_ids = map(lambda id: ObjectId(id), idigbio_ids[0:limit])
+		pbdb_ids = map(lambda id: ObjectId(id), pbdb_ids[0:limit])
 
-            resolved_references["idigbio_resolved"] = resolved
+		#
+		# resolve idigbio refs
+		#
+		m = self.idigbio.find({"_id": {"$in" : idigbio_ids}})
 
-            # resolve pbdb refs
-            ids = map(lambda id: ObjectId(id), item["matches"]["pbdb"])
-            m = self.pbdb.find({"_id": {"$in": ids}})
+		resolved = []
+		for mitem in m:
+			row = {"uuid": mitem['idigbio:uuid'], "url": "https://www.idigbio.org/portal/records/" + mitem['idigbio:uuid']}
 
-            resolved = []
-            for mitem in m:
-                row = {"url": 'https://paleobiodb.org/data1.2/occs/single.json?id=' + mitem['occurrence_no'] + '&show=full' }
+			if idigbio_fields is not None:
+				for f in idigbio_fields:
+					if f in mitem:
+						row[f] = mitem[f]
+			resolved.append(row)
 
-                if paleobio_fields is not None:
-                    for f in paleobio_fields:
-                            if f in mitem:
-                                row[f] = mitem[f]
+		resolved_references["idigbio_resolved"] = resolved
+		
+		#
+		# resolve pbdb refs
+		#
+		m = self.pbdb.find({"_id": {"$in": pbdb_ids}})
 
-                resolved.append(row)
+		resolved = []
+		for mitem in m:
+			row = {"url": 'https://paleobiodb.org/data1.2/occs/single.json?id=' + str(mitem['occurrence_no']) + '&show=full' }
 
-            resolved_references["pbdb_resolved"] = resolved
+			if paleobio_fields is not None:
+				for f in paleobio_fields:
+					if f in mitem:
+						row[f] = mitem[f]
 
-        return resolved_references
+			resolved.append(row)
+
+		resolved_references["pbdb_resolved"] = resolved
+
+		return resolved_references
 
     #
     # Set parameter data directly
@@ -103,7 +126,7 @@ class baseResource(Resource):
         if "offset" not in data:
             data["offset"] = 0
         if "limit" not in data:
-            data["limit"] = 100
+            data["limit"] = 10
 
         for p in desc:
             if p["name"] not in data:
@@ -146,7 +169,7 @@ class baseResource(Resource):
             # JSON blob
             if r_as_json is not None:
                 if(p['name'] in r_as_json):
-                    self.params[p['name']] = r_as_json[p['name']]
+                    self.params[p['name']] = r_as_json[p['name']].lower()
                     c = c + 1
                 else:
                     self.params[p['name']] = None
@@ -154,7 +177,7 @@ class baseResource(Resource):
             # POST request
             elif request.method == 'POST':
                 if(p['name'] in request.form):
-                    self.params[p['name']] = request.form[p['name']]
+                    self.params[p['name']] = request.form[p['name']].lower()
                     c = c + 1
                 else:
                     self.params[p['name']] = None
@@ -163,7 +186,7 @@ class baseResource(Resource):
             elif request.method == 'GET':
                 v = r.args.get(p['name'])
                 if (v):
-                    self.params[p['name']] = v
+                    self.params[p['name']] = v.lower()
                     c = c + 1
                 else:
                     self.params[p['name']] = None
@@ -236,7 +259,7 @@ class baseResource(Resource):
     def limit(self):
         if self.params is None or self.params.get('limit') is None:
             self.getParams()
-        return 100 if self.params['limit'] is None else int(self.params['limit'])
+        return 10 if self.params['limit'] is None else int(self.params['limit'])
 
     #
     # Default description block for endpoints that don't describe themselves

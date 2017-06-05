@@ -14,7 +14,7 @@ parser.add_argument('taxnomy', type=str, help='Taxon hierarchy to search on')
 class taxonomy(mongoBasedResource):
 	def process(self):
 		# Mongodb index for localities
-		tindex = self.client.endpoints.taxonIndex
+		tindex = self.client.endpoints.taxonIndex2
 		mindex = self.client.endpoints.mediaIndex
 		# Mongodb gridFS instance
 		grid = gridfs.GridFS(self.client.endpoints)                   
@@ -31,10 +31,16 @@ class taxonomy(mongoBasedResource):
 			res = None
 			criteria = {'endpoint': 'taxonomy', 'parameters': {}, 'matchTerms': {'scientificNames': []}}
 			taxonQuery = []
-			for p in ['scientificName', 'species', 'genus', 'family', 'order', 'class', 'family', 'phylum', 'kingdom', 'other']:
-				if (params[p]):
-					criteria['parameters'][p] = params[p]
-					taxonQuery.append({p: params[p]})
+			for p in [{'scientificName': ['scientificNames', 'originalScientificName']}, {'species': ['species', 'taxonomy.species']}, {'genus': ['genus', 'taxonomy.genus']}, {'family': ['family', 'taxonomy.family']}, {'order': ['order', 'taxonomy.order']}, {'class': ['class', 'taxonomy.class']}, {'family': ['family', 'taxonomy.family']}, {'phylum': ['phylum', 'taxonomy.phylum']}, {'kingdom': ['kingdom', 'taxonomy.kingdom']}, {'other': ['taxonomy.noRank']}]:
+				val = p.keys()[0]
+				if (params[val]):
+					criteria['parameters'][val] = params[val]
+					for field in p[val]:
+						taxonQuery.append({field: params[val]})
+			#for p in ['scientificNames', 'species', 'genus', 'family', 'order', 'class', 'family', 'phylum', 'kingdom', 'other']:
+			#	if (params[p]):
+			#		criteria['parameters'][p] = params[p]
+			#		taxonQuery.append({p: params[p]})
 			
 			if(params['fullTaxonomy']):
 				criteria['parameters']['fullTaxonomy'] = params['fullTaxonomy']
@@ -99,7 +105,7 @@ class taxonomy(mongoBasedResource):
 			d = self.resolveReferences(d)
 			counts = {'totalCount': idbCount + pbdbCount, 'idbCount': idbCount, 'pbdbCount': pbdbCount}
 
-			d['pbdb_resolved'] = d['pbdb_resolved'][offset:limit]
+			#d['pbdb_resolved'] = d['pbdb_resolved'][offset:limit]
 			
 			media = []
 			if imageRes:
