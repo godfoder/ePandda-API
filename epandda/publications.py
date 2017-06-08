@@ -52,7 +52,7 @@ class publications(mongoBasedResource):
             'name': 'Publication index',
             'maintainer': 'Jon Lauters',
             'maintainer_email': 'jon@epandda.org',
-            'description': 'Returns specimen occurrence and publication records for a given scientific name. results can be filtered by the optional params',
+            'description': 'Returns specimen occurrence and publication records for a given scientific name. Results may be filtered using the available parameters.',
             'params': [
                 {
                     "name": "scientific_name",
@@ -88,7 +88,7 @@ class publications(mongoBasedResource):
                     "name": "county",
                     "type": "text",
                     "required": False,
-                    "descripiton": "The county to search for scientific_name and publication references"
+                    "description": "The county to search for scientific_name and publication references"
                 },
                 {
                     "name": "locality",

@@ -6,13 +6,14 @@ class paleobio:
         return "pbdb_flat_index"
 
     def availableFields(self):
-        return ["interval_no", "paleolat", "species_name", "author1last", "collectors", "occurrence_no", "reference_no",
-                "interval_name", "county", "taxon_name", "collection_type", "common_name", "type_specimen", "lng",
-                "otherauthors", "period_max",
-                "subgenus_name", "author2init", "pubno", "museum", "state", "comments", "member", "eml_interval",
-                "reftitle", "taxon_rank", "abund_unit",
-                "paleolng", "collection_aka", "epoch_min", "epoch_max", "pubtitle", "genus_name", "formation", "lat",
-                "abund_value", "period_min", "doi",
-                "catalog_number", "collection_no", "collection_name", "pubyr", "author1init", "intage_max", "taxon_no",
-                "country", "author2last", "pubvol",
-                "intage_min"]
+        return ["occurrence_no", "genus_name", "species_reso", "species_name", "subgenus_reso", "subgenus_name", 
+"abund_value", "abund_unit", "reference_no" "occ_reference_no",
+"comments", "taxon_no", "country", "state", "county", "collection_aka", "collection_name", "research_group",
+"period_min", "period_max", "emlperiod_max", "emlperiod_min", "emlepoch_max", "emlepoch_min", 
+"epoch_max", "epoch_min", "emlintage_min", "emlintage_max", "intage_min", "intage_max", 
+"emllocage_min", "emllocage_max", "locage_min", "locage_max", "zone_type", "zone", "formation", 
+"member", "lithadj", "lithification", "minor_lithology", "lithology1", "lithology2", "lithadj2", 
+"lithification2", "minor_lithology2", "environment", "tectonic_setting", "geology_comments", 
+"taxonomy_comments", "collection_comments", "collectors", "collection_type", "assembl_comps", 
+"preservation_comments", "pres_mode", "lithdescript", "stratcomments", "stratscale", "geogcomments", 
+"paleolng", "paleolat", "plate", "latlng_precision", "lat", "lng", "reference_no" "coll_reference_no"]
