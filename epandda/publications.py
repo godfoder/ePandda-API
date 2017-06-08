@@ -17,35 +17,118 @@ parser.add_argument('locality', type=str, help='Locality name to filter describe
 class publications(mongoBasedResource):
     def process(self):
 
-        # Required
-        scientific_name = self.getRequest().args.get('scientific_name')
+        # Mongodb index for Publications
+        pubIndex = self.client.endpoints.pubIndexV2
 
-        # Optional
-        journal         = self.getRequest().args.get('journal')
-        article         = self.getRequest().args.get('article')
-        author          = self.getRequest().args.get('author')
-        state_prov      = self.getRequest().args.get('state_province')
-        county          = self.getRequest().args.get('county')
-        locality        = self.getRequest().args.get('locality')
+  
+        # returns dictionary of params as defined in endpoint description
+        # will throw exception if required param is not present
+        params = self.getParams()
 
+        # offset and limit returned as ints with default if not set
+        offset = self.offset()
+        limit = self.limit()
 
-        lindex = self.client.test.spIndex                       # Mongodb index for localities
+        if limit < 1:
+          limit = 100
 
-        if locality:
-            res = lindex.find({"$text": {"$search": locality}})
+        if self.paramCount > 0:
+          criteria = {
+            'endpoint': 'publication',
+            'parameters': {},
+            'matchPoints': [],
+            'matchTerms': { 
+              'stateProvinceNames': [],
+              'countryNames': [],
+              'countyNames': [],
+              'localityNames': [],
+              'originalStates': [],
+              'originalCountries': [],
+              'originalCounties': [],
+              'originalLocalities': []
+            }
+          }
 
-            d = []
+          for p in ['countryName', 'countryCode', 'locality', 'stateProvinceName', 'stateProvinceCode', 'county']:
+            if (params[p]):
+              criteria['parameters'][p] = params[p]
+
+          d = []
+          matches = {'idigbio': [], 'pbdb': []}
+          idbCount = 0
+          pbdbCount = 0
+
+          print "PARAMS CHECK: "
+          print params
+
+          res = pubIndex.find( pubQuery ) 
+
+          if res:
             for i in res:
-                terms = i['original_terms']
-                terms.append(locality)
-                item = {"terms": terms, "matches": {"pbdb": i['pbdb_data'], "idigbio": i['idb_data']}}
-                d.append(item)
+              if 'countryName' in i and i['countryName'] not in criteria['matchTerms']['countryNames']:
+                criteria['matchTerms']['countryNames'].append(i['countryName'])
 
-            d = self.resolveReferences(d)
-            resp = self.toJson(d)
+              if 'stateProvinceName' in i and i['stateProvinceName'] not in criteria['matchTerms']['stateProvinceNames']:
+                criteria['matchTerms']['stateProvinceNames'].append(i['stateProvinceName'])
+    
+              if 'county' in i and i['county'] not in criteria['matchTerms']['countyNames']:
+                criteria['matchTerms']['countyNames'].append(i['county'])
+          
+              if 'locality' in i:
+                if i['locality'] not in criteria['matchTerms']['localityNames']:
+                  criteria['matchTerms']['localityNames'].append(i['locality'])    
 
+          
+              if 'originalStateProvinceName' in i:
+                for origState in i['originalStateProvinceName']:
+                  if origState not in criteria['matchTerms']['originalStates']:
+                    criteria['matchTerms']['originialStates'].append(origState)
+
+              if 'originalCountryName' in i:
+                for origCountry in i['originalCountryName']:
+                  if origCountry not in criteria['matchTerms']['originalCountries']:
+                    criteria['matchTerms']['originalContries'].append(origCountry)
+
+              if 'original_county' in i:
+                for origCounty in i['original_county']:
+                  if origCounty not in criteria['matchTerms']['originalCounties']:
+                    criteria['matchTerms']['originalCounties'].append(origCounty)
+
+              if 'original_locality' in i:
+                for origLocality in i['original_locality']:
+                  if origLocality not in criteria['matchTerms']['originalLocalities']:
+                    criteria['matchTerms']['originalLocalities'].append(origLocality)
+
+          finalMatches = {'idigbio': [], 'pbdb': []}
+          if len(matches['idigbio']) > 0:
+            finalMatches['idigbio'] = set(matches['idigbio'])
+          else:
+            finalMatches['idigbio'] = matches['idigbio']
+
+          idbCount = len(finalMatches['idigbio'])
+
+          if len(matches['pbdb']) > 0:
+            finalMatches = set(matches['pbdb'])
+          else:
+            finalMatches = matches['pbdb']
+
+          pbdbCount = len(finalMatches['pbdb'])
+          resolveSet = { 'idigbio': finalMatches['idigbio'][offset:limit],
+                         'pbdb': finalMatches['pbdb'][offset:limit] }
+          item = {'matches': finalMatches}
+          d.append(item)
+          d = self.resolveReferences(d)
+
+          counts = {
+            'totalCount': idbCount + pbdbCount, 
+            'idbCount': idbCount,
+            'pbdbCount': pbdbCount
+          }
+
+          return self.respond({'counts': counts, 'results': d, 'criteria': criteria})
         else:
-            return self.respondWithDescription()
+          return self.respondWithDescription()
+            
 
     def description(self):
         return {
