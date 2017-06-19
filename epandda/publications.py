@@ -7,7 +7,7 @@ parser.add_argument('scientific_name', type=str, help='Taxonomic name to search 
 parser.add_argument('journal', type=str, help='Journal name where taxon was described')
 parser.add_argument('article', type=str, help='Article name where taxon was described')
 parser.add_argument('author', type=str, help='One of the authors of article describing taxon')
-parser.add_argument('state_province', type=str, help='State or province name to filter described taxon results')
+parser.add_argument('stateProvinceName', type=str, help='State or province name to filter described taxon results')
 parser.add_argument('county', type=str, help='County name to filter described taxon results')
 parser.add_argument('locality', type=str, help='Locality name to filter described taxon results')
 
@@ -17,7 +17,7 @@ parser.add_argument('locality', type=str, help='Locality name to filter describe
 class publications(mongoBasedResource):
     def process(self):
 
-        # Mongodb index for Publications
+        # Mongodb index for Publication
         pubIndex = self.client.endpoints.pubIndexV2
 
   
@@ -32,7 +32,9 @@ class publications(mongoBasedResource):
         if limit < 1:
           limit = 100
 
+        pubQuery = []
         if self.paramCount > 0:
+
           criteria = {
             'endpoint': 'publication',
             'parameters': {},
@@ -49,22 +51,41 @@ class publications(mongoBasedResource):
             }
           }
 
-          for p in ['countryName', 'countryCode', 'locality', 'stateProvinceName', 'stateProvinceCode', 'county']:
-            if (params[p]):
-              criteria['parameters'][p] = params[p]
+          for p in ['stateProvinceName', 'author', 'scientific_name', 'journal', 'locality', 'county', 'article']:  
+          #  if params[p]:
+          #    criteria['parameters'][p] == params[p]
+
+
+
+            if 'scientific_name' == p:
+              higher_taxa = str(params[p]).title()
+              pubQuery.append({"higher_taxa": higher_taxa })  
+              criteria['parameters'][p] = str(params[p].title() )
+
+            if 'stateProvinceName' == p:
+              state = str(params[p]).lower()
+              pubQuery.append({ "states": state })
+              criteria['matchTerms']['stateProvinceNames'].append( str( params[p]).lower() )
+              criteria['parameters'][p] = str(params[p].title() )
 
           d = []
           matches = {'idigbio': [], 'pbdb': []}
           idbCount = 0
           pbdbCount = 0
 
-          print "PARAMS CHECK: "
-          print params
+          res = pubIndex.find({"$and":  pubQuery })
 
-          res = pubIndex.find( pubQuery ) 
 
           if res:
+
             for i in res:
+           
+              if 'vetted' in i:
+                for idb in i['vetted']:
+                  matches['idigbio'].append( idb['uuid'] )
+
+              matches['pbdb'].append( i['pid'] )
+
               if 'countryName' in i and i['countryName'] not in criteria['matchTerms']['countryNames']:
                 criteria['matchTerms']['countryNames'].append(i['countryName'])
 
@@ -100,24 +121,19 @@ class publications(mongoBasedResource):
                     criteria['matchTerms']['originalLocalities'].append(origLocality)
 
           finalMatches = {'idigbio': [], 'pbdb': []}
-          if len(matches['idigbio']) > 0:
-            finalMatches['idigbio'] = set(matches['idigbio'])
-          else:
-            finalMatches['idigbio'] = matches['idigbio']
+          finalMatches['idigbio'] = matches['idigbio']
+          finalMatches['pbdb'] = matches['pbdb']
 
           idbCount = len(finalMatches['idigbio'])
-
-          if len(matches['pbdb']) > 0:
-            finalMatches = set(matches['pbdb'])
-          else:
-            finalMatches = matches['pbdb']
-
           pbdbCount = len(finalMatches['pbdb'])
+          
           resolveSet = { 'idigbio': finalMatches['idigbio'][offset:limit],
                          'pbdb': finalMatches['pbdb'][offset:limit] }
           item = {'matches': finalMatches}
           d.append(item)
-          d = self.resolveReferences(d)
+    
+          # Hiding resolveReferences until base class errors are resolved
+          #d = self.resolveReferences(d)
 
           counts = {
             'totalCount': idbCount + pbdbCount, 
@@ -127,6 +143,9 @@ class publications(mongoBasedResource):
 
           return self.respond({'counts': counts, 'results': d, 'criteria': criteria})
         else:
+
+          print "Should respond with  Description?"
+
           return self.respondWithDescription()
             
 
@@ -140,7 +159,7 @@ class publications(mongoBasedResource):
                 {
                     "name": "scientific_name",
                     "type": "text",
-                    "required": True,
+                    "required": False,
                     "description": "Taxon to search occurrence records for"
                 },
                 {
@@ -162,7 +181,7 @@ class publications(mongoBasedResource):
                     "description": "The name of the author who's article describes the given scientific_name"
                 },
                 {
-                    "name": "state_province",
+                    "name": "stateProvinceName",
                     "type": "text",
                     "required": False,
                     "description": "The state/province to search for scientific_name and publication references"
