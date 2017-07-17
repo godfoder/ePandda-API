@@ -86,7 +86,7 @@ class stratigraphy(mongoBasedResource):
 			d = self.resolveReferences(d)
 			counts = {'totalCount': idbCount + pbdbCount, 'idbCount': idbCount, 'pbdbCount': pbdbCount}
 
-			d['pbdb_resolved'] = d['pbdb_resolved'][offset:limit]
+			#d['pbdb_resolved'] = d['pbdb_resolved'][offset:limit]
 			
 			media = []
 			if imageRes:

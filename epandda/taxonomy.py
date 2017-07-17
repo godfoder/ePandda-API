@@ -3,6 +3,9 @@ from flask_restful import reqparse
 import gridfs
 import json
 from bson import ObjectId
+import requests
+from requests.exceptions import ConnectionError
+import urllib
 
 
 parser = reqparse.RequestParser()
@@ -15,7 +18,7 @@ class taxonomy(mongoBasedResource):
 	def process(self):
 		# Mongodb index for localities
 		tindex = self.client.endpoints.taxonIndex2
-		mindex = self.client.endpoints.mediaIndex
+		mindex = self.client.endpoints.mediaIndex3
 		# Mongodb gridFS instance
 		grid = gridfs.GridFS(self.client.endpoints)                   
 
@@ -46,37 +49,38 @@ class taxonomy(mongoBasedResource):
 				criteria['parameters']['fullTaxonomy'] = params['fullTaxonomy']
 				taxonQuery.append({'$text': {'$search': '"' + params['fullTaxonomy'] + '"', '$caseSensitive': False}})
 			
-			imageQuery = []
-			if(params['images'] == 'True'):
-				for taxon in criteria['parameters'].values():
-					imageQuery.append(taxon)
+			
 			if (len(taxonQuery) == 0):
 				return self.respondWithError({"GENERAL": "No valid parameters specified"})
 			if len(taxonQuery) > 0:
 				res = tindex.find({'$and': taxonQuery})
-			if len(imageQuery) > 0:
-				imageRes = mindex.find({'index_term': {'$in': imageQuery}})
+			
 			d = []
+			idbMatches = []
 			matches = {'idigbio': [], 'pbdb': []}
 			idbCount = 0
 			pbdbCount = 0
 			if res:
 				for i in res:
-					taxonomy = i['taxonomy']
-					scientificNames = i['scientificNames']
-					for sciName in scientificNames:
-						if sciName not in criteria['matchTerms']['scientificNames']:
-							criteria['matchTerms']['scientificNames'].append(sciName)
-					taxon_ranks = taxonomy.keys()
-					for rank in taxon_ranks:
-						if rank in criteria['matchTerms']:
-							for term in taxonomy[rank]:
-								if term not in criteria['matchTerms'][rank]:
+					if(params['images'] == 'true'):
+						idbMatches.append(i['_id'])
+					if 'scientificNames' in i:
+						scientificNames = i['scientificNames']
+						for sciName in scientificNames:
+							if sciName not in criteria['matchTerms']['scientificNames']:
+								criteria['matchTerms']['scientificNames'].append(sciName)
+					if 'taxonomy' in i:
+						taxonomy = i['taxonomy']
+						taxon_ranks = taxonomy.keys()
+						for rank in taxon_ranks:
+							if rank in criteria['matchTerms']:
+								for term in taxonomy[rank]:
+									if term not in criteria['matchTerms'][rank]:
+										criteria['matchTerms'][rank].append(term)
+							else:
+								criteria['matchTerms'][rank] = []
+								for term in taxonomy[rank]:
 									criteria['matchTerms'][rank].append(term)
-						else:
-							criteria['matchTerms'][rank] = []
-							for term in taxonomy[rank]:
-								criteria['matchTerms'][rank].append(term)
 
 					if 'pbdbGridFile' in i:
 						pbdbGrids = i['pbdbGridFile']
@@ -97,6 +101,26 @@ class taxonomy(mongoBasedResource):
 							idb_matches = json.loads(idb_doc.read())
 							matches['idigbio'] = matches['idigbio'] + idb_matches
 			
+			
+			imageQuery = []
+			media = []
+			#breakNext = False
+			#taxonHierarchy = ['scientificNames', 'species', 'genus', 'family', 'order', 'class', 'phylum', 'kingdom']
+			if(params['images'] == 'true'):
+				#return matches['idigbio']
+				#imgMatches = [ObjectId(match) for match in matches['idigbio']]
+				imgRes = mindex.find({'epandda_ids': {'$in': idbMatches}})
+				for res in imgRes:
+					imgSpecimens = res['mediaURIs']
+					#media = media + imgSpecimens
+					for specimen in imgSpecimens:
+						url = 'https://www.idigbio.org/portal/records/' + specimen
+						links = imgSpecimens[specimen]
+						for link in links:	
+							if [url, link] in media:
+								continue
+							media.append([url, link])
+			
 			idbCount = len(matches['idigbio'])
 			pbdbCount = len(matches['pbdb'])
 
@@ -107,12 +131,7 @@ class taxonomy(mongoBasedResource):
 
 			#d['pbdb_resolved'] = d['pbdb_resolved'][offset:limit]
 			
-			media = []
-			if imageRes:
-				for m in imageRes:
-					images = m['media_uris']
-					for image in images:
-						media.append(image)
+			
 			return self.respond({'counts': counts, 'results': d, 'criteria': criteria, 'media': media})
 
 		else:
@@ -130,7 +149,7 @@ class taxonomy(mongoBasedResource):
 				"label": "Taxonomy Full Text",
 				"type": "text",
 				"required": False,
-				"description": "A specific scientific name, including or not including scientific name authorship and year"
+				"description": "A search across all levels of of the taxonomic hierarchy"
 			},
 			{
 				"name": "scientificName",
@@ -151,14 +170,14 @@ class taxonomy(mongoBasedResource):
 				"label": "Genus",
 				"type": "text",
 				"required": False,
-				"description": "The Genus"
+				"description": "Genus name"
 			},
 			{
 				"name": "family",
 				"label": "Family",
 				"type": "text",
 				"required": False,
-				"description": "The Family"
+				"description": "Family name"
 			},
 			{
 				"name": "order",
@@ -172,7 +191,7 @@ class taxonomy(mongoBasedResource):
 				"label": "Class",
 				"type": "text",
 				"required": False,
-				"description": 'County name. Do not add "County" to your search string'
+				"description": 'Class name'
 			},
 			{
 				"name": "phylum",

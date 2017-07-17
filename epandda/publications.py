@@ -56,42 +56,49 @@ class publications(mongoBasedResource):
             'params': [
                 {
                     "name": "scientific_name",
+                    "label": "Scientific Name",
                     "type": "text",
                     "required": True,
                     "description": "Taxon to search occurrence records for"
                 },
                 {
                     "name": "journal",
+                    "label": "Journal",
                     "type": "text",
                     "required": False,
                     "description": "Then name of academic Journal a publication would be found"
                 },
                 {
                     "name": "article",
+                    "label": "Article",
                     "type": "text",
                     "required": False,
                     "description": "The name of the journal article the given scientific_name appears in"
                 },
                 {
                     "name": "author",
+                    "label": "Author",
                     "type": "text",
                     "required": False,
                     "description": "The name of the author who's article describes the given scientific_name"
                 },
                 {
                     "name": "state_province",
+                    "label": "State/Province",
                     "type": "text",
                     "required": False,
                     "description": "The state/province to search for scientific_name and publication references"
                 },
                 {
                     "name": "county",
+                    "label": "County",
                     "type": "text",
                     "required": False,
                     "description": "The county to search for scientific_name and publication references"
                 },
                 {
                     "name": "locality",
+                    "label": "Locality",
                     "type": "text",
                     "required": False,
                     "description": "The locality name to search for scientific_name occurences and publication references"

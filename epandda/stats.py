@@ -58,55 +58,56 @@ class stats(baseResource):
             'name': 'API statistics',
             'maintainer': 'Michael Benowitz',
             'maintainer_email': 'michael@epandda.org',
-            'description': '(Sometimes) interesting API statistics',
+            'description': 'Interesting API statistics',
             'params': [
             {
                 "name": "stateProvinces",
+                "label": "States/Provinces",
                 "type": "boolean",
                 "required": False,
                 "description": "The number of unique states represented in the collections"
             },
             {
                 "name": "countries",
+                "label": "Countries",
                 "type": "boolean",
                 "required": False,
                 "description": "The number of unique countries represented in the collections"
             },
             {
                 "name": "counties",
+                "label": "Counties",
                 "type": "boolean",
                 "required": False,
                 "description": "The number of unique counties represented in the collections"
             },
             {
                 "name": "localities",
+                "label": "Localities",
                 "type": "boolean",
                 "required": False,
                 "description": "The number of unique localities represented in the collections"
             },
             {
                 "name": "geoPoints",
+                "label": "Geographic Coordinates",
                 "type": "boolean",
                 "required": False,
                 "description": "The number of unique geographic coordinates represented in the collections"
             },
             {
                 "name": "totalRecords",
+                "label": "Total Records",
                 "type": "boolean",
                 "required": False,
                 "description": "The count of all specimen/occurrence records included in project from iDigBio and PBDB"
             },
             {
                 "name": "taxonomies",
+                "label": "Taxonomies",
                 "type": "boolean",
                 "required": False,
                 "description": "The number of unique taxonomic hierarchies represented in the collections"
-            },
-            {
-                "name": "geoPoints",
-                "type": "boolean",
-                "required": False,
-                "description": "The number of unique geographic coordinates represented in the collections"
             }
             ]
         }

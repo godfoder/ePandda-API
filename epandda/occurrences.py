@@ -226,27 +226,23 @@ class occurrences(mongoBasedResource):
 			'params': [
 				{
 					"name": "taxon_name",
+					"label": "Taxonomy",
 					"type": "text",
 					"required": False,
 					"description": "The taxa to search occurrences for"
 				},
 				{
 					"name": "locality",
+					"label": "Locality",
 					"type": "text",
 					"required": False,
 					"description": "The locality name to bound taxonomic occurences to",
 				},
 				{
 					"name": "chronostratigraphy",
+					"label": "Chronostratigraphy",
 					"type": "text",
 					"required": False, 
 					"description": "The geologic time period to filter taxon occurrences by"
-				},
-				{
-					"name": "institution_code",
-					"type": "text",
-					"required": False,
-					"char_limit": "TBD",
-					"description": "The abbreviated institution code that houses the taxon occurrence specimen"
 				}
 			]}
