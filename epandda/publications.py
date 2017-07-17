@@ -52,21 +52,42 @@ class publications(mongoBasedResource):
           }
 
           for p in ['stateProvinceName', 'author', 'scientific_name', 'journal', 'locality', 'county', 'article']:  
-          #  if params[p]:
-          #    criteria['parameters'][p] == params[p]
 
+            if params[p]:
 
+              if 'scientific_name' == p:
+                higher_taxa = str(params[p]).title()
+                pubQuery.append({"higher_taxa": higher_taxa })  
 
-            if 'scientific_name' == p:
-              higher_taxa = str(params[p]).title()
-              pubQuery.append({"higher_taxa": higher_taxa })  
-              criteria['parameters'][p] = str(params[p].title() )
+              if 'stateProvinceName' == p:
+                state = str(params[p]).lower()
+                pubQuery.append({"states": state})
+                criteria['matchTerms']['stateProvinceNames'].append( state )
 
-            if 'stateProvinceName' == p:
-              state = str(params[p]).lower()
-              pubQuery.append({ "states": state })
-              criteria['matchTerms']['stateProvinceNames'].append( str( params[p]).lower() )
-              criteria['parameters'][p] = str(params[p].title() )
+              if 'county' == p:
+                county = str(params[p]).lower()
+                pubQuery.append({"county": county})
+                criteria['matchTerms']['countyNames'].append( county )
+              
+              if 'locality' == p:
+                locality = str(params[p]).lower()
+                pubQuery.append({"locality": locality})
+                criteria['matchTerms']['localityNames'].append( locality )
+
+              if 'author' == p:
+                author = str(params[p]).lower()
+                pubQuery.append({"author1_last": author})
+                pubQuery.append({"author2_last": author})
+
+              if 'journal' == p:
+                journal = str(params[p])
+                pubQuery.append({"pub_title": journal})
+
+              if 'article' == p:
+                article = str(params[p])
+                pubQuery.append({"index_term": article})
+
+              criteria['parameters'][p] = str(params[p]).lower()
 
           d = []
           matches = {'idigbio': [], 'pbdb': []}
@@ -133,7 +154,7 @@ class publications(mongoBasedResource):
           d.append(item)
     
           # Hiding resolveReferences until base class errors are resolved
-          #d = self.resolveReferences(d)
+          d = self.resolveReferences(d,'refs', 'both' )
 
           counts = {
             'totalCount': idbCount + pbdbCount, 
@@ -154,7 +175,7 @@ class publications(mongoBasedResource):
             'name': 'Publication index',
             'maintainer': 'Jon Lauters',
             'maintainer_email': 'jon@epandda.org',
-            'description': 'Returns specimen occurrence and publication records for a given scientific name. Results may be filtered using the available parameters.',
+            'description': 'Returns specimen and publication records for a given scientific name. Results may be filtered using the available parameters.',
             'params': [
                 {
                     "name": "scientific_name",
