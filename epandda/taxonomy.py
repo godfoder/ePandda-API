@@ -18,7 +18,7 @@ class taxonomy(mongoBasedResource):
 	def process(self):
 		# Mongodb index for localities
 		tindex = self.client.endpoints.taxonIndex
-		mindex = self.client.endpoints.mediaIndex
+		mindex = self.client.endpoints.mediaIndex3
 		# Mongodb gridFS instance
 		grid = gridfs.GridFS(self.client.endpoints)                   
 
@@ -56,14 +56,11 @@ class taxonomy(mongoBasedResource):
 				res = tindex.find({'$and': taxonQuery})
 			
 			d = []
-			idbMatches = []
 			matches = {'idigbio': [], 'pbdb': []}
 			idbCount = 0
 			pbdbCount = 0
 			if res:
 				for i in res:
-					if(params['images'] == 'true'):
-						idbMatches.append(i['_id'])
 					if 'scientificNames' in i:
 						scientificNames = i['scientificNames']
 						for sciName in scientificNames:
@@ -104,15 +101,10 @@ class taxonomy(mongoBasedResource):
 			
 			imageQuery = []
 			media = []
-			#breakNext = False
-			#taxonHierarchy = ['scientificNames', 'species', 'genus', 'family', 'order', 'class', 'phylum', 'kingdom']
 			if(params['images'] == 'true'):
-				#return matches['idigbio']
-				#imgMatches = [ObjectId(match) for match in matches['idigbio']]
-				imgRes = mindex.find({'epandda_ids': {'$in': idbMatches}})
+				imgRes = mindex.find({'idigbio_uuids': {'$in': matches['idigbio']}})
 				for res in imgRes:
 					imgSpecimens = res['mediaURIs']
-					#media = media + imgSpecimens
 					for specimen in imgSpecimens:
 						url = 'https://www.idigbio.org/portal/records/' + specimen
 						links = imgSpecimens[specimen]
@@ -129,9 +121,6 @@ class taxonomy(mongoBasedResource):
 			d = self.resolveReferences(d)
 			counts = {'totalCount': idbCount + pbdbCount, 'idbCount': idbCount, 'pbdbCount': pbdbCount}
 
-			#d['pbdb_resolved'] = d['pbdb_resolved'][offset:limit]
-			
-			
 			return self.respond({'counts': counts, 'results': d, 'criteria': criteria, 'media': media})
 
 		else:
