@@ -51,71 +51,94 @@ class baseResource(Resource):
     #
     # Resolve underlying data source ids (from iDigBio, PBDB, Etc.) to URLs the end-user can use
     #
-    def resolveReferences(self, data):
-		resolved_references = {"idigbio_resolved" : [], "pbdb_resolved": [] }
+    def resolveReferences(self, data, pbdb_type='occs', show_type='full'):
 
-		idigbio_fields = self.getFieldsForSource("idigbio", True)
-		paleobio_fields = self.getFieldsForSource("paleobio", True)
+        resolved_references = {"idigbio_resolved" : [], "pbdb_resolved": [] }
 
-		offset = self.offset()
-		limit = self.limit()
+        idigbio_fields = self.getFieldsForSource("idigbio", True)
+        paleobio_fields = self.getFieldsForSource("paleobio", True)
 
-		idigbio_ids = []
-		pbdb_ids = []
+        offset = self.offset()
+        limit = self.limit()
 
-		for item in data:
-			if len(idigbio_ids) < offset + limit:
-				idigbio_ids = idigbio_ids + item["matches"]["idigbio"]
-	
-			if len(pbdb_ids) < offset + limit:
-				pbdb_ids = pbdb_ids + item["matches"]["pbdb"]
-	
-			if (len(idigbio_ids) >= offset + limit) and (len(pbdb_ids) >= offset + limit):
-				break
+        idigbio_ids = []
+        pbdb_ids = []
 
-		if offset > 0:
-			idigbio_ids = idigbio_ids[offset:]
-			pbdb_ids = pbdb_ids[offset:]
-		
-		idigbio_ids = map(lambda id: ObjectId(id), idigbio_ids[0:limit])
-		pbdb_ids = map(lambda id: ObjectId(id), pbdb_ids[0:limit])
+        use_UUID = True
 
-		#
-		# resolve idigbio refs
-		#
-		m = self.idigbio.find({"_id": {"$in" : idigbio_ids}})
+        for item in data:
+            if len(idigbio_ids) < offset + limit:
 
-		resolved = []
-		for mitem in m:
-			row = {"uuid": mitem['idigbio:uuid'], "url": "https://www.idigbio.org/portal/records/" + mitem['idigbio:uuid']}
+                if ObjectId.is_valid( item["matches"]["idigbio"] ):
+                  print "Setting use_UUID to false ..."
+                  use_UUID = False
 
-			if idigbio_fields is not None:
-				for f in idigbio_fields:
-					if f in mitem:
-						row[f] = mitem[f]
-			resolved.append(row)
+                idigbio_ids = idigbio_ids + item["matches"]["idigbio"]
 
-		resolved_references["idigbio_resolved"] = resolved
-		
-		#
-		# resolve pbdb refs
-		#
-		m = self.pbdb.find({"_id": {"$in": pbdb_ids}})
+            if len(pbdb_ids) < offset + limit:
 
-		resolved = []
-		for mitem in m:
-			row = {"url": 'https://paleobiodb.org/data1.2/occs/single.json?id=' + str(mitem['occurrence_no']) + '&show=full' }
+                if ObjectId.is_valid( item["matches"]["pbdb"] ):
+                  use_UUID = False
 
-			if paleobio_fields is not None:
-				for f in paleobio_fields:
-					if f in mitem:
-						row[f] = mitem[f]
+                pbdb_ids = pbdb_ids + item["matches"]["pbdb"]
 
-			resolved.append(row)
+            if (len(idigbio_ids) >= offset + limit) and (len(pbdb_ids) >= offset + limit):
+                 break
 
-		resolved_references["pbdb_resolved"] = resolved
+        if offset > 0:
+            idigbio_ids = idigbio_ids[offset:]
+            pbdb_ids = pbdb_ids[offset:]
 
-		return resolved_references
+        if limit > 0:
+            idigbio_ids = idigbio_ids[offset:limit]
+            pbdb_ids = pbdb_ids[offset:limit]
+
+        if not use_UUID:
+            idigbio_ids = map(lambda id: ObjectId(id), idigbio_ids[0:limit])
+            pbdb_ids = map(lambda id: ObjectId(id), pbdb_ids[0:limit])
+
+            #
+            # resolve idigbio refs
+            #
+            m = self.idigbio.find({"_id": {"$in" : idigbio_ids}})
+
+        resolved = []
+        for mitem in data:
+          for idb_uuid in mitem['matches']['idigbio']:
+            row = {"uuid": str(idb_uuid), "url": "https://www.idigbio.org/portal/records/" + str(idb_uuid)}
+
+            if idigbio_fields is not None:
+                for f in idigbio_fields:
+                    if f in mitem:
+                        row[f] = mitem[f]
+            resolved.append(row)
+
+        resolved_references["idigbio_resolved"] = resolved
+
+        #
+        # resolve pbdb refs
+        #
+        #m = self.pbdb.find({"_id": {"$in": pbdb_ids}})
+
+        
+        if 'refs' == pbdb_type:
+          show_type = 'both'
+
+        resolved = []
+        for mitem in data:
+          for pbdbid in mitem['matches']['pbdb']:
+            row = {"url": 'https://paleobiodb.org/data1.2/' + pbdb_type + '/single.json?id=' + str(pbdbid) + '&show=' + show_type }
+
+            if paleobio_fields is not None:
+                for f in paleobio_fields:
+                    if f in mitem:
+                        row[f] = mitem[f]
+
+            resolved.append(row)
+
+        resolved_references["pbdb_resolved"] = resolved
+
+        return resolved_references
 
     #
     # Set parameter data directly
@@ -194,6 +217,14 @@ class baseResource(Resource):
         self.validateParams()
 
         self.paramCount = c
+
+
+        print "*** *** *** *** *** *** *** *** *** "
+
+        print "params being returned from getParams"
+        print self.params
+
+        print " *** **** **** ***8 **** ***8"
 
         return self.params
 

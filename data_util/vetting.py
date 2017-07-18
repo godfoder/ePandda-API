@@ -1,4 +1,3 @@
-import idigbio
 import codecs
 import json
 import requests
@@ -9,10 +8,7 @@ from pymongo import MongoClient
 client = MongoClient('mongodb://127.0.0.1:27017')
 db = client.test
 
-# Python iDigBio Client
-api = idigbio.json()
-
-cursor = db.pubIndexV2.find().limit(3)
+cursor = db.pubIndexV2.find({'vetted': {'$exists': False}})
 for record in cursor:
 
    if 'needs_vetting' in record:
@@ -20,6 +16,7 @@ for record in cursor:
      print "We need to match .. "
      pprint.pprint( record )
 
+     vetted = []
      for v in record['needs_vetting']:
         
         score = 0
@@ -78,15 +75,17 @@ for record in cursor:
               matched_fields.append("Earliest Era / Lowest Erathem found in title")
 
           if 'dwc:associatedReferences' in idigbio['data']:
-            if record['author1_last'] in idigbio['data']['dwc:associatedReferences']:
+            if 'author1_last' in record:
+              if record['author1_last'] in idigbio['data']['dwc:associatedReferences']:
             
-              score = score + 1
-              matched_fields.append("Author1 found in Assoc Refs")
+                score = score + 1
+                matched_fields.append("Author1 found in Assoc Refs")
 
-            if record['author2_last'] and record['author2_last'] in idigbio['data']['dwc:associatedReferences']:
+            if 'author2_last' in record:
+              if record['author2_last'] in idigbio['data']['dwc:associatedReferences']:
 
-              score = score + 1
-              matched_fields.append("Author2 found in Assoc Refs")
+                score = score + 1
+                matched_fields.append("Author2 found in Assoc Refs")
 
             if record['index_term'] in idigbio['data']['dwc:associatedReferences']:
 
@@ -95,18 +94,68 @@ for record in cursor:
 
 
           if 'dwc:scientificNameAuthorship' in idigbio['data']:
-            if record['author1_last'] in idigbio['data']['dwc:scientificNameAuthorship']:
+            if 'author1_last' in record:
+              if record['author1_last'] in idigbio['data']['dwc:scientificNameAuthorship']:
     
+                score = score + 1
+                matched_fields.append("Authorship1 Matched")
+
+            if record['pubyear'] in idigbio['data']['dwc:scientificNameAuthorship']:
+              
               score = score + 1
-              matched_fields.append("Authorship1 Matched")
+              matched_fields.append("Pubyear in SciNameAuthorship")
 
+            if 'author2_last' in record:
+              if record['author2_last'] in idigbio['data']['dwc:scientificNameAuthorship']:
 
-            if record['author2_last'] and record['author2_last'] in idigbio['data']['dwc:scientificNameAuthorship']:
+                score = score + 1
+                matched_fields.append("Authorship2 Matched")
 
-              score = score + 1
-              matched_fields.append("Authorship2 Matched")
+          if 'dwc:Identification' in idigbio['data']:
+            for ID in idigbio['data']['dwc:Identification']:
+
+              if 'dwc:identificationReferences' in ID:
+
+                if record['index_term'] in ID['dwc:identificationReferences']:
+             
+                  score = score + 5
+                  matched_fields.append("Article Title found in IdentRefs")
+
+          if 'dcterms:bibliographicCitation' in idigbio['data']:
+        
+            # Consider this your lucky day
+            # Check article title, author, pub title
+
+            if record['index_term'] in idigbio['data']['dcterms:bibliographicCitation']:
+
+              score = score + 5
+              matched_fields.append("Article title in biblioCitation")
+
+            if record['pubtitle'] in idigbio['data']['dcterms:bibliographicCitation']:
+        
+              score = score + 5
+              matched_fields.append("Pub Title in biblioCitation")
+
+            if 'author1_last' in record:
+              if record['author1_last'] in idigbio['data']['dcterms:bibliographicCitation']:
+           
+                score = score + 1
+                matched_fields.append("Author1 in BiblioCitation")
+ 
+            if 'author2_last' in record:
+              if record['author2_last'] in idigbio['data']['dcterms:bibliographicCitation']:
+ 
+                score = score + 1
+                matched_fields.append("Author2 in BiblioCitation")
+
 
         print "How'd we do? --------------------------------------------------------------"
         print "Score: " + str(score)
         print "Matched On: "
         pprint.pprint( matched_fields )
+
+        vetted.append({ "uuid": v, "score": score, "matched_on": matched_fields})
+
+     db.pubIndexV2.update({"_id": record['_id']}, {"$set": {"vetted": vetted }}) 
+
+
