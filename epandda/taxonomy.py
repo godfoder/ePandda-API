@@ -17,8 +17,8 @@ parser.add_argument('taxnomy', type=str, help='Taxon hierarchy to search on')
 class taxonomy(mongoBasedResource):
 	def process(self):
 		# Mongodb index for localities
-		tindex = self.client.endpoints.taxonIndex2
-		mindex = self.client.endpoints.mediaIndex3
+		tindex = self.client.endpoints.taxonIndex
+		mindex = self.client.endpoints.mediaIndex
 		# Mongodb gridFS instance
 		grid = gridfs.GridFS(self.client.endpoints)                   
 

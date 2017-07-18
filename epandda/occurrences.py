@@ -17,9 +17,9 @@ parser.add_argument('institution_code', type=str, help='The abbreviated code sub
 class occurrences(mongoBasedResource):
 	def process(self):
 	
-		lindex = self.client.endpoints.localityIndexV3                       # Mongodb index for localities
-		tindex = self.client.endpoints.taxonIndex2						     # Mongodb index for taxa
-		cindex = self.client.endpoints.chronoStratIndex3					 # Mongodb index for chronostratigraphy
+		lindex = self.client.endpoints.localityIndex                       # Mongodb index for localities
+		tindex = self.client.endpoints.taxonIndex						     # Mongodb index for taxa
+		cindex = self.client.endpoints.chronoStratIndex					 # Mongodb index for chronostratigraphy
 		grid = gridfs.GridFS(self.client.endpoints)                   
 
 		# returns dictionary of params as defined in endpoint description

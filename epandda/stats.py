@@ -27,7 +27,7 @@ class stats(baseResource):
                 response['specimens'] = idbCount
                 response['occurrences'] = pbdbCount
            
-            localityIndex = endpoints.localityIndexV3
+            localityIndex = endpoints.localityIndex
             for place in ['countries', 'stateProvinces', 'counties', 'localities']:
             	if params[place]:
             		placeTerm = localityFields[place]
@@ -37,13 +37,13 @@ class stats(baseResource):
                 	response[place] = placeCount
 
             if params['geoPoints']:
-                geoPointIndex = endpoints.geoPointIndex2
+                geoPointIndex = endpoints.geoPointIndex
                 geoCount = geoPointIndex.find().count()
                 criteria['parameters'].append('geoPoints')
                 response['geoPoints'] = geoCount
            		
             if params['taxonomies']:
-                taxonIndex = endpoints.taxonIndex2
+                taxonIndex = endpoints.taxonIndex
                 taxonCount = taxonIndex.find().count()
                 criteria['parameters'].append('taxonomies')
                 response['taxonomies'] = taxonCount

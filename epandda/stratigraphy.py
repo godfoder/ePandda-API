@@ -17,7 +17,7 @@ parser.add_argument('locality', type=str, help='locality name to filter taxonomi
 class stratigraphy(mongoBasedResource):
     def process(self):
     	# Mongodb index for localities
-		sindex = self.client.endpoints.chronoStratIndex3
+		sindex = self.client.endpoints.chronoStratIndex
 		# Mongodb gridFS instance
 		grid = gridfs.GridFS(self.client.endpoints)                   
 

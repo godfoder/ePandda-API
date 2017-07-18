@@ -15,10 +15,10 @@ parser.add_argument('locality', type=str, help='Locality name to to search geona
 class geonames(mongoBasedResource):
 	def process(self):
 		# Mongodb index for localities
-		lindex = self.client.endpoints.localityIndexV3
+		lindex = self.client.endpoints.localityIndex
 
 		# Mongodb index for geoPoints
-		pindex = self.client.endpoints.geoPointIndex2
+		pindex = self.client.endpoints.geoPointIndex
 
 		# Mongodb gridFS instance
 		grid = gridfs.GridFS(self.client.endpoints)                   
