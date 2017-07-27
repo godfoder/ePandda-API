@@ -10,6 +10,7 @@ import inspect
 from sources import idigbio
 from sources import paleobio
 import re
+import annotation
 
 #
 # Base class for API resource
@@ -23,7 +24,8 @@ class baseResource(Resource):
         # Load API config
         self.config = json.load(open('./config.json'))
 
-        self.client = MongoClient("mongodb://" + self.config['mongodb_user'] + ":" + self.config['mongodb_password'] + "@" + self.config['mongodb_host'])
+        #self.client = MongoClient("mongodb://" + self.config['mongodb_user'] + ":" + self.config['mongodb_password'] + "@" + self.config['mongodb_host'])
+        self.client = MongoClient("mongodb://127.0.0.1")
         self.idigbio = self.client.idigbio.occurrence
         self.pbdb = self.client.pbdb.pbdb_occurrences
 
@@ -64,6 +66,11 @@ class baseResource(Resource):
         idigbio_ids = []
         pbdb_ids = []
 
+
+        print "data:"
+        print data
+        
+        # Could params this if need be?
         use_UUID = True
 
         for item in data:
@@ -217,15 +224,7 @@ class baseResource(Resource):
         self.validateParams()
 
         self.paramCount = c
-
-
-        print "*** *** *** *** *** *** *** *** *** "
-
-        print "params being returned from getParams"
-        print self.params
-
-        print " *** **** **** ***8 **** ***8"
-
+        
         return self.params
 
     #
@@ -369,6 +368,11 @@ class baseResource(Resource):
     #   "routes" => a list of valid API endpoints, with descriptions for each.
     #
     def respond(self, return_object, respType="data"):
+
+        print " RESPOND DEBUG: "
+        print "Return Object ....:"
+        print return_object
+
         # Default Response
         if respType == "routes":
             defaults = {
@@ -422,6 +426,28 @@ class baseResource(Resource):
             resp['params'] = return_object['params']
         if 'media' in return_object:
             resp['media'] = return_object['media']
+
+        # this may be specific to publications only ..
+        if "faceted_matches" in return_object:
+          resp['faceted_matches'] = return_object['faceted_matches']
+
+          # if annotations are requested create OpenAnnotations and add to return object
+          if resp['includeAnnotations']:
+
+            resp['annotations'] = []
+            for fm in return_object['faceted_matches']:
+
+              target = { 'uuid': fm['idigbio_uuid'] } 
+              body = { 
+                'pbdb_id': fm['pbdb_id'],
+                'matchedOn': fm['matchedOn'],
+                'cnt_chars': '{}' # String Representation of JSON object of matching Darwin Core fields in Pub record
+                
+              }
+
+              resp['annotations'].append( annotation.create( target, body ) ) 
+
+
         if self.returnResponse:
             return Response(json.dumps(resp, sort_keys=True, indent=4, separators=(',', ': ')).encode('utf8'), status=status_code, mimetype=mime_type)
         else:
