@@ -6,9 +6,9 @@
 import requests
 import json
 
-banner = requests.get('http://epandda.whirl-i-gig.com/')
+banner = requests.get('https://api.epandda.org/')
 
-doc = open('../../site/endpoint_doc.html', 'w')
+doc = open('../../site/endpoint_doc_temp.html', 'w')
 
 endpoint_doc = '''
 <section id="documentation-endpoint" class="container-full">
@@ -28,7 +28,7 @@ if banner.status_code == 200:
 		print endpoint
 		if endpoint in ['/']:
 			continue
-		route = 'http://epandda.whirl-i-gig.com' + endpoint['url']
+		route = 'https://api.epandda.org/' + endpoint['url']
 		description = requests.get(route)
 		
 		if description.status_code == 200:
@@ -89,7 +89,6 @@ if banner.status_code == 200:
 		else:
 			print "ERROR " + str(description.status_code)
 		
-
 	point_html = ' '.join(end_sections)
 
 doc_end = '''

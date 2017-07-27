@@ -114,10 +114,11 @@ class baseResource(Resource):
           for idb_uuid in mitem['matches']['idigbio']:
             row = {"uuid": str(idb_uuid), "url": "https://www.idigbio.org/portal/records/" + str(idb_uuid)}
 
-            if idigbio_fields is not None:
+	    if idigbio_fields is not None:
+                m = list(self.idigbio.find({"idigbio:uuid": idb_uuid}))[0]
                 for f in idigbio_fields:
-                    if f in mitem:
-                        row[f] = mitem[f]
+                    if f in m:
+                        row[f] = m[f]
             resolved.append(row)
 
         resolved_references["idigbio_resolved"] = resolved
@@ -137,9 +138,10 @@ class baseResource(Resource):
             row = {"url": 'https://paleobiodb.org/data1.2/' + pbdb_type + '/single.json?id=' + str(pbdbid) + '&show=' + show_type }
 
             if paleobio_fields is not None:
+                m = list(self.pbdb.find({"occurrence_no": int(pbdbid)}))[0]
                 for f in paleobio_fields:
-                    if f in mitem:
-                        row[f] = mitem[f]
+                    if f in m:
+                        row[f] = m[f]
 
             resolved.append(row)
 
@@ -231,10 +233,16 @@ class baseResource(Resource):
     # Validate parameter values
     #
     def getFieldsForSource(self, source, defaultToAll=False):
+        ucFields = {'idigbio:geopoint': 'idigbio:geoPoint', 'dwc:scientificname': 'dwc:scientificName'}
         if source in self.sources:
             fields_available_in_source = self.sources[source].availableFields()
             if source + "_fields" in self.params and self.params[source + "_fields"] is not None and len(self.params[source + "_fields"]) > 0:
-                fields = re.split(",; ", self.params[source + "_fields"])
+                fields = re.split("[,; ]", self.params[source + "_fields"])
+		i = 0
+                for field in fields:
+		    if field in ucFields:
+                        fields[i] = ucFields[field]
+                    i += 1
                 return list(set(fields) & set(fields_available_in_source))
             elif defaultToAll:
                 return fields_available_in_source
