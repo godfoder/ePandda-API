@@ -24,8 +24,8 @@ class baseResource(Resource):
         # Load API config
         self.config = json.load(open('./config.json'))
 
-        #self.client = MongoClient("mongodb://" + self.config['mongodb_user'] + ":" + self.config['mongodb_password'] + "@" + self.config['mongodb_host'])
-        self.client = MongoClient("mongodb://127.0.0.1")
+        self.client = MongoClient("mongodb://" + self.config['mongodb_user'] + ":" + self.config['mongodb_password'] + "@" + self.config['mongodb_host'])
+        #self.client = MongoClient("mongodb://127.0.0.1")
         self.idigbio = self.client.idigbio.occurrence
         self.pbdb = self.client.pbdb.pbdb_occurrences
 
@@ -66,9 +66,6 @@ class baseResource(Resource):
         idigbio_ids = []
         pbdb_ids = []
 
-
-        print "data:"
-        print data
         
         # Could params this if need be?
         use_UUID = True
@@ -111,14 +108,19 @@ class baseResource(Resource):
 
         resolved = []
         for mitem in data:
+
           for idb_uuid in mitem['matches']['idigbio']:
+
             row = {"uuid": str(idb_uuid), "url": "https://www.idigbio.org/portal/records/" + str(idb_uuid)}
 
-	    if idigbio_fields is not None:
-                m = list(self.idigbio.find({"idigbio:uuid": idb_uuid}))[0]
-                for f in idigbio_fields:
-                    if f in m:
-                        row[f] = m[f]
+            if idigbio_fields is not None:
+
+              m = list(self.idigbio.find({"idigbio:uuid": idb_uuid}))[0]
+              for f in idigbio_fields:
+
+                if f in m:
+                  row[f] = m[f]
+
             resolved.append(row)
 
         resolved_references["idigbio_resolved"] = resolved

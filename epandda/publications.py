@@ -18,7 +18,7 @@ class publications(mongoBasedResource):
     def process(self):
 
         # Mongodb index for Publication
-        pubIndex = self.client.test.pubIndexV2
+        pubIndex = self.client.endpoints.pubIndexV2
 
   
         # returns dictionary of params as defined in endpoint description
@@ -166,12 +166,15 @@ class publications(mongoBasedResource):
           d.append({'matches': finalMatches})
           d = self.resolveReferences(d,'refs', 'both' )
 
+          print "Our references resolved ..."
+
           counts = {
             'totalCount': idbCount + pbdbCount, 
             'idbCount': idbCount,
             'pbdbCount': pbdbCount
           }
 
+          print "Responding data package ..."
           return self.respond({
               'counts': counts, 
               'results': d,
@@ -180,8 +183,6 @@ class publications(mongoBasedResource):
               'faceted_matches': matches['faceted_matches']
           })
         else:
-
-          print "Should respond with  Description?"
 
           return self.respondWithDescription()
             
@@ -222,7 +223,7 @@ class publications(mongoBasedResource):
                     "description": "The name of the author who's article describes the given scientific_name"
                 },
                 {
-                    "name": "state_province",
+                    "name": "stateProvinceName",
                     "label": "State/Province",
                     "type": "text",
                     "required": False,
