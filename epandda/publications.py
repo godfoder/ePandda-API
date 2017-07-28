@@ -25,6 +25,11 @@ class publications(mongoBasedResource):
         # will throw exception if required param is not present
         params = self.getParams()
 
+        if "true" == params['includeAnnotations']:
+          params['includeAnnotations'] = True
+        else:
+          params['includeAnnotations'] = False
+
         # offset and limit returned as ints with default if not set
         offset = self.offset()
         limit = self.limit()
@@ -90,19 +95,26 @@ class publications(mongoBasedResource):
               criteria['parameters'][p] = str(params[p]).lower()
 
           d = []
-          matches = {'idigbio': [], 'pbdb': []}
+          matches = {'idigbio': [], 'pbdb': [], 'faceted_matches': []}
           idbCount = 0
           pbdbCount = 0
 
           res = pubIndex.find({"$and":  pubQuery })
+
+          print "PubIndex Response: "
 
 
           if res:
 
             for i in res:
            
+
               if 'vetted' in i:
+
+
                 for idb in i['vetted']:
+                  
+                  matches['faceted_matches'].append({ 'pbdb_id': i['pid'], 'idigbio_uuid': idb['uuid'], 'matchedOn': idb['matched_on'], 'score': idb['score']}) 
                   matches['idigbio'].append( idb['uuid'] )
 
               matches['pbdb'].append( i['pid'] )
@@ -150,11 +162,11 @@ class publications(mongoBasedResource):
           
           resolveSet = { 'idigbio': finalMatches['idigbio'][offset:limit],
                          'pbdb': finalMatches['pbdb'][offset:limit] }
-          item = {'matches': finalMatches}
-          d.append(item)
-    
-          # Hiding resolveReferences until base class errors are resolved
+
+          d.append({'matches': finalMatches})
           d = self.resolveReferences(d,'refs', 'both' )
+
+          print "Our references resolved ..."
 
           counts = {
             'totalCount': idbCount + pbdbCount, 
@@ -162,10 +174,15 @@ class publications(mongoBasedResource):
             'pbdbCount': pbdbCount
           }
 
-          return self.respond({'counts': counts, 'results': d, 'criteria': criteria})
+          print "Responding data package ..."
+          return self.respond({
+              'counts': counts, 
+              'results': d,
+              'criteria': criteria,
+              'includeAnnotations': params['includeAnnotations'],
+              'faceted_matches': matches['faceted_matches']
+          })
         else:
-
-          print "Should respond with  Description?"
 
           return self.respondWithDescription()
             
@@ -206,7 +223,7 @@ class publications(mongoBasedResource):
                     "description": "The name of the author who's article describes the given scientific_name"
                 },
                 {
-                    "name": "state_province",
+                    "name": "stateProvinceName",
                     "label": "State/Province",
                     "type": "text",
                     "required": False,
@@ -225,5 +242,10 @@ class publications(mongoBasedResource):
                     "type": "text",
                     "required": False,
                     "description": "The locality name to search for scientific_name occurences and publication references"
-                }
-            ]}
+                },
+                {
+                    "name": "includeAnnotations",
+                    "type": "boolean",
+                    "required": False,
+                    "description": "Toggles if OpenAnnotations section should be included or not"
+                }]}
