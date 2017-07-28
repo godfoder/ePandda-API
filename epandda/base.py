@@ -101,18 +101,35 @@ class baseResource(Resource):
             # resolve idigbio refs
             #
             m = self.idigbio.find({"_id": {"$in" : idigbio_ids}})
+        else:
+            m = self.idigbio.find({"idigbio:uuid": {"$in" : idigbio_ids}})
+            idigbio_records = {}
+            for i in m:
+                idigbio_records[i['idigbio:uuid']] = i
+            pbdb_ids = [ int(pbdb_id) for pbdb_id in pbdb_ids ]
+            p = self.pbdb.find({"occurrence_no": {"$in" : pbdb_ids}})
+            pbdb_records = {}
+            for i in p:
+                pbdb_records[i['occurrence_no']] = i
+            print pbdb_records
 
         resolved = []
-        for mitem in data:
-          for idb_uuid in mitem['matches']['idigbio']:
+        for idb_uuid in idigbio_ids:
             row = {"uuid": str(idb_uuid), "url": "https://www.idigbio.org/portal/records/" + str(idb_uuid)}
 
-	    if idigbio_fields is not None:
-                m = list(self.idigbio.find({"idigbio:uuid": idb_uuid}))[0]
+            if idigbio_fields is not None:
                 for f in idigbio_fields:
-                    if f in m:
-                        row[f] = m[f]
+                    if f in idigbio_records[idb_uuid]:
+                        row[f] = idigbio_records[idb_uuid][f]
             resolved.append(row)
+
+        # if idigbio_fields is not None:
+        #        m = list(self.idigbio.find({"idigbio:uuid": idb_uuid}))[0]
+        #        for f in idigbio_fields:
+        #            if f in m:
+        #                row[f] = m[f]
+        #    resolved.append(row)
+
 
         resolved_references["idigbio_resolved"] = resolved
 
@@ -121,20 +138,25 @@ class baseResource(Resource):
         #
         #m = self.pbdb.find({"_id": {"$in": pbdb_ids}})
 
-        
+
         if 'refs' == pbdb_type:
           show_type = 'both'
 
         resolved = []
         for mitem in data:
-          for pbdbid in mitem['matches']['pbdb']:
+          for pbdbid in pbdb_ids:
+            print pbdbid
             row = {"url": 'https://paleobiodb.org/data1.2/' + pbdb_type + '/single.json?id=' + str(pbdbid) + '&show=' + show_type }
-
+            print pbdb_records[pbdbid]
             if paleobio_fields is not None:
-                m = list(self.pbdb.find({"occurrence_no": int(pbdbid)}))[0]
                 for f in paleobio_fields:
-                    if f in m:
-                        row[f] = m[f]
+                    if f in pbdb_records[pbdbid]:
+                        row[f] = pbdb_records[pbdbid][f]
+            #if paleobio_fields is not None:
+            #    m = list(self.pbdb.find({"occurrence_no": int(pbdbid)}))[0]
+            #    for f in paleobio_fields:
+            #        if f in m:
+            #            row[f] = m[f]
 
             resolved.append(row)
 
