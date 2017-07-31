@@ -23,7 +23,7 @@ def create(target, body):
 
   open_annotation = {}
   open_annotation['@context'] = ["https://www.w3.org/ns/oa.jsonld", {"dwc": "http://rs.tdwg.org/dwc/terms/"}] 
-  open_annotation['@id'] = "https://epandda.org/annotations/" + str(anno_uuid)
+  open_annotation['@id'] = "urn:uuid:" + str(anno_uuid)
   open_annotation['@type'] = "oa:Annotation"
   open_annotation['annotatedAt'] = str(datestamp)
   open_annotation['annotatedBy'] = {
