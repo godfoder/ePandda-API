@@ -1,7 +1,5 @@
+import re
 from mongo import mongoBasedResource
-from flask_restful import reqparse
-
-parser = reqparse.RequestParser()
 
 #
 #
@@ -10,8 +8,7 @@ class annotations(mongoBasedResource):
     def process(self):
 
         # Mongodb index for Publication
-        annotations = self.client.test.annotations
-
+        annotations = self.client.endpoints.annotations
   
         # returns dictionary of params as defined in endpoint description
         # will throw exception if required param is not present
@@ -28,57 +25,40 @@ class annotations(mongoBasedResource):
         if self.paramCount > 0:
 
           criteria = {
-            'endpoint': 'annotation',
+            'endpoint': 'annotations',
             'parameters': {},
-            'matchPoints': [],
-            'matchTerms': {}
           }
 
-          #for p in ['stateProvinceName', 'author', 'scientific_name', 'journal', 'locality', 'county', 'article']:  
+          for p in ['annotationDate']:  
+ 
+            if params[p]:
 
+              if 'annotationDate' == p:
+                annoQuery.append({"annotatedAt": { '$regex': params[p]} }) 
             
-          d = []
-          idbCount = 0
-          pbdbCount = 0
+              criteria['parameters'][p] = str(params[p]).lower()
 
-          res = annotations.find({"$and":  annoQuery })
+          d = []
+          annoCount = 0
+
+          # Allows for optional Date param since you can't $and on nothing.
+          res = annotations.find({}, {'_id': False})
+          if annoQuery:
+            res = annotations.find({"$and":  annoQuery }, {'_id': False})
 
           if res:
+              for i in res:
+                  d.append(i)
 
-            for i in res:
-           
-              matches['faceted_matches'] = i
 
-              
-          finalMatches = {'idigbio': [], 'pbdb': []}
-          finalMatches['idigbio'] = matches['idigbio']
-          finalMatches['pbdb'] = matches['pbdb']
-
-          idbCount = len(finalMatches['idigbio'])
-          pbdbCount = len(finalMatches['pbdb'])
-          
-          resolveSet = { 'idigbio': finalMatches['idigbio'][offset:limit],
-                         'pbdb': finalMatches['pbdb'][offset:limit] }
-
-          d.append({'matches': finalMatches})
-          d = self.resolveReferences(d,'refs', 'both' )
-
-          counts = {
-            'totalCount': idbCount + pbdbCount, 
-            'idbCount': idbCount,
-            'pbdbCount': pbdbCount
-          }
+          counts = {'totalCount': len(d)}
 
           return self.respond({
               'counts': counts, 
-              'results': d,
+              'results': d[offset:limit],
               'criteria': criteria,
-              'includeAnnotations': params['includeAnnotations'],
-              'faceted_matches': matches['faceted_matches']
           })
         else:
-
-          print "Should respond with  Description?"
 
           return self.respondWithDescription()
             
@@ -89,6 +69,14 @@ class annotations(mongoBasedResource):
             'maintainer': 'Jon Lauters',
             'maintainer_email': 'jon@epandda.org',
             'description': 'Returns openAnnotations for linked data in ePANDDA.',
-            'params': []
+            'params': [
+                {
+                    "name": "annotationDate",
+                    "label": "Annotation Date",
+                    "type": "text",
+                    "required": False,
+                    "description": "Filter annotation results by AnnotatedAt date. Format annotationDate=YYYY-MM-DD"
+                }
+            ]
         }
                 

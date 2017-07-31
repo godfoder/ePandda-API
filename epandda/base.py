@@ -63,6 +63,9 @@ class baseResource(Resource):
         offset = self.offset()
         limit = self.limit()
 
+        print "Base Offset: " + str(offset)
+        print "Base Limit: " + str(limit)
+
         idigbio_ids = []
         pbdb_ids = []
 
@@ -74,7 +77,6 @@ class baseResource(Resource):
             if len(idigbio_ids) < offset + limit:
 
                 if ObjectId.is_valid( item["matches"]["idigbio"] ):
-                  print "Setting use_UUID to false ..."
                   use_UUID = False
 
                 idigbio_ids = idigbio_ids + item["matches"]["idigbio"]
@@ -115,7 +117,6 @@ class baseResource(Resource):
             pbdb_records = {}
             for i in p:
                 pbdb_records[i['occurrence_no']] = i
-            print pbdb_records
 
         resolved = []
         for idb_uuid in idigbio_ids:
@@ -133,8 +134,6 @@ class baseResource(Resource):
             #        if f in m:
             #            row[f] = m[f]
 
-            print "Row: "
-            print row
 
             resolved.append(row)
 
@@ -402,10 +401,6 @@ class baseResource(Resource):
     #
     def respond(self, return_object, respType="data"):
 
-        print " RESPOND DEBUG: "
-        print "Return Object ....:"
-        print return_object
-
         # Default Response
         if respType == "routes":
             defaults = {
@@ -468,6 +463,8 @@ class baseResource(Resource):
           if resp['includeAnnotations']:
 
             resp['annotations'] = []
+         
+            # TODO: replace annotation creation with annotation lookup 
             for fm in return_object['faceted_matches']:
 
               target = { 'uuid': fm['idigbio_uuid'] } 

@@ -11,8 +11,6 @@ import uuid
 
 def create(target, body):
 
-  print "in create annotation"
-
   # Timestamp and annotation uuid
   anno_uuid = uuid.uuid4()
   datestamp = datetime.datetime.fromtimestamp( time.time() ).strftime('%Y-%m-%d %H:%M:%S %Z')
