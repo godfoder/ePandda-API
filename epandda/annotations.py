@@ -6,11 +6,11 @@ parser = reqparse.RequestParser()
 #
 #
 #
-class publications(mongoBasedResource):
+class annotations(mongoBasedResource):
     def process(self):
 
         # Mongodb index for Publication
-        pubIndex = self.client.test.annotations
+        annotations = self.client.test.annotations
 
   
         # returns dictionary of params as defined in endpoint description
@@ -38,7 +38,6 @@ class publications(mongoBasedResource):
 
             
           d = []
-          matches = {'idigbio': [], 'pbdb': [], 'faceted_matches': []}
           idbCount = 0
           pbdbCount = 0
 
@@ -86,56 +85,10 @@ class publications(mongoBasedResource):
 
     def description(self):
         return {
-            'name': 'Publication index',
+            'name': 'Annotations',
             'maintainer': 'Jon Lauters',
             'maintainer_email': 'jon@epandda.org',
-            'description': 'Returns specimen and publication records for a given scientific name. Results may be filtered using the available parameters.',
-            'params': [
-                {
-                    "name": "scientific_name",
-                    "type": "text",
-                    "required": False,
-                    "description": "Taxon to search occurrence records for"
-                },
-                {
-                    "name": "journal",
-                    "type": "text",
-                    "required": False,
-                    "description": "Then name of academic Journal a publication would be found"
-                },
-                {
-                    "name": "article",
-                    "type": "text",
-                    "required": False,
-                    "description": "The name of the journal article the given scientific_name appears in"
-                },
-                {
-                    "name": "author",
-                    "type": "text",
-                    "required": False,
-                    "description": "The name of the author who's article describes the given scientific_name"
-                },
-                {
-                    "name": "stateProvinceName",
-                    "type": "text",
-                    "required": False,
-                    "description": "The state/province to search for scientific_name and publication references"
-                },
-                {
-                    "name": "county",
-                    "type": "text",
-                    "required": False,
-                    "description": "The county to search for scientific_name and publication references"
-                },
-                {
-                    "name": "locality",
-                    "type": "text",
-                    "required": False,
-                    "description": "The locality name to search for scientific_name occurences and publication references"
-                },
-                {
-                    "name": "includeAnnotations",
-                    "type": "boolean",
-                    "required": False,
-                    "description": "Toggles if OpenAnnotations section should be included or not"
-                }]}
+            'description': 'Returns openAnnotations for linked data in ePANDDA.',
+            'params': []
+        }
+                
