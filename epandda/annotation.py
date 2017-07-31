@@ -17,19 +17,14 @@ def create(target, body):
 
   target_uuid = str(target['uuid'])
 
-  # TODO: Check if body has doi
-  # TODO: Allow for body to pass in annotator?
-  # TODO: Determine if we need to also push this into a mongoDB? Maybe a flag on the constructor?
-
   open_annotation = {}
   open_annotation['@context'] = ["https://www.w3.org/ns/oa.jsonld", {"dwc": "http://rs.tdwg.org/dwc/terms/"}] 
   open_annotation['@id'] = "urn:uuid:" + str(anno_uuid)
   open_annotation['@type'] = "oa:Annotation"
   open_annotation['annotatedAt'] = str(datestamp)
   open_annotation['annotatedBy'] = {
-    "@id": "http://grab.by/PuPq", 
+    "@id": "https://epandda.org", 
     "@type": "foaf:Project",
-    "mbox": { "@id": "mailto:annotation@epandda.org" },
     "name": "ePANDDA Annotation Bot"
   }
 
@@ -40,9 +35,6 @@ def create(target, body):
   pbdb_id = ''
   if body['pbdb_id'] is not None:
     pbdb_id = body['pbdb_id']
-
-
-  # "! cnt:chars": "{\"dwc:occurrenceRemarks\": " + title + "}",
 
   open_annotation['hasBody'] = {
     "! cnt:chars": matchedOn,
