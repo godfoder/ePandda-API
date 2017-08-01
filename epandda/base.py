@@ -28,6 +28,8 @@ class baseResource(Resource):
         #self.client = MongoClient("mongodb://127.0.0.1")
         self.idigbio = self.client.idigbio.occurrence
         self.pbdb = self.client.pbdb.pbdb_occurrences
+        self.annotations = self.client.endpoints.annotations
+
 
         self.params = None
         self.paramCount = 0
@@ -62,9 +64,6 @@ class baseResource(Resource):
 
         offset = self.offset()
         limit = self.limit()
-
-        print "Base Offset: " + str(offset)
-        print "Base Limit: " + str(limit)
 
         idigbio_ids = []
         pbdb_ids = []
@@ -459,23 +458,20 @@ class baseResource(Resource):
         if "faceted_matches" in return_object:
           resp['faceted_matches'] = return_object['faceted_matches']
 
-          # if annotations are requested create OpenAnnotations and add to return object
           if resp['includeAnnotations']:
 
             resp['annotations'] = []
-         
-            # TODO: replace annotation creation with annotation lookup 
             for fm in return_object['faceted_matches']:
 
-              target = { 'uuid': fm['idigbio_uuid'] } 
-              body = { 
-                'pbdb_id': fm['pbdb_id'],
-                'matchedOn': fm['matchedOn'],
-                'cnt_chars': '{}' # String Representation of JSON object of matching Darwin Core fields in Pub record
-                
-              }
+              idigbio_uuid = fm['idigbio_uuid']
+              pbdb_id = fm['pbdb_id'] 
 
-              resp['annotations'].append( annotation.create( target, body ) ) 
+              annoCursor = self.annotations.find({ "$and": [ {"hasTarget.@id": "urn:uuid:" + str(idigbio_uuid)},
+                { "hasBody.@id": "https://paleobiodb.org/data1.2/refs/single.json?id=" + str(pbdb_id) + "&show=both"} ] 
+              }, { "_id": False})
+
+              for anno in annoCursor:
+                resp['annotations'].append( anno ) 
 
 
         if self.returnResponse:
