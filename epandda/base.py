@@ -121,21 +121,12 @@ class baseResource(Resource):
         for idb_uuid in idigbio_ids:
             row = {"uuid": str(idb_uuid), "url": "https://www.idigbio.org/portal/records/" + str(idb_uuid)}
 
-            #if idigbio_fields is not None:
-            #    for f in idigbio_fields:
-            #        if f in idigbio_records[idb_uuid]:
-            #            row[f] = idigbio_records[idb_uuid][f]
-            #resolved.append(row)
-
-            #if idigbio_fields is not None:
-            #    m = list(self.idigbio.find({"idigbio:uuid": idb_uuid}))[0]
-            #    for f in idigbio_fields:
-            #        if f in m:
-            #            row[f] = m[f]
-
-
+            if idigbio_fields is not None:
+                for f in idigbio_fields:
+                	if idb_uuid in idigbio_records:
+                		if f in idigbio_records[idb_uuid]:
+                			row[f] = idigbio_records[idb_uuid][f]
             resolved.append(row)
-
 
         resolved_references["idigbio_resolved"] = resolved
 
@@ -153,12 +144,10 @@ class baseResource(Resource):
           for pbdbid in pbdb_ids:
             row = {"url": 'https://paleobiodb.org/data1.2/' + pbdb_type + '/single.json?id=' + str(pbdbid) + '&show=' + show_type }
 
-            #if paleobio_fields is not None:
-            #    for f in paleobio_fields:
-            #        if f in pbdb_records[pbdbid]:
-            #            row[f] = pbdb_records[pbdbid][f]
-
-
+            if paleobio_fields is not None:
+                for f in paleobio_fields:
+                    if f in pbdb_records[pbdbid]:
+                        row[f] = pbdb_records[pbdbid][f]
 
             #if paleobio_fields is not None:
             #    m = list(self.pbdb.find({"occurrence_no": int(pbdbid)}))[0]

@@ -8,7 +8,7 @@ class annotations(mongoBasedResource):
     def process(self):
 
         # Mongodb index for Publication
-        annotations = self.client.endpoints.annotations
+        annotations = self.client.test.annotations
   
         # returns dictionary of params as defined in endpoint description
         # will throw exception if required param is not present
@@ -42,7 +42,7 @@ class annotations(mongoBasedResource):
           annoCount = 0
 
           # Allows for optional Date param since you can't $and on nothing.
-          res = annotations.find({}, {'_id': False})
+          res = annotations.find({}, {'_id': False}).limit(limit).skip(offset)
           if annoQuery:
             res = annotations.find({"$and":  annoQuery }, {'_id': False})
 
