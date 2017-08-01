@@ -43,10 +43,12 @@ class annotations(mongoBasedResource):
           # Total Count:
           annoCount = annotations.find({}).count()
 
-          # Allows for optional Date param since you can't $and on nothing.
-          res = annotations.find({}, {'_id': False}).skip(offset).limit(limit)
           if annoQuery:
             res = annotations.find({"$and":  annoQuery }, {'_id': False}).skip(offset).limit(limit)
+          else:
+            # Allows for optional Date param since you can't $and on nothing.
+            res = annotations.find({}, {'_id': False}).skip(offset).limit(limit)
+
 
           if res:
               for i in res:
