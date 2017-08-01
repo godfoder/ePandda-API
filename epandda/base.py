@@ -28,6 +28,8 @@ class baseResource(Resource):
         #self.client = MongoClient("mongodb://127.0.0.1")
         self.idigbio = self.client.idigbio.occurrence
         self.pbdb = self.client.pbdb.pbdb_occurrences
+        self.annotations = self.client.endpoints.annotations
+
 
         self.params = None
         self.paramCount = 0
@@ -74,7 +76,6 @@ class baseResource(Resource):
             if len(idigbio_ids) < offset + limit:
 
                 if ObjectId.is_valid( item["matches"]["idigbio"] ):
-                  print "Setting use_UUID to false ..."
                   use_UUID = False
 
                 idigbio_ids = idigbio_ids + item["matches"]["idigbio"]
@@ -115,7 +116,6 @@ class baseResource(Resource):
             pbdb_records = {}
             for i in p:
                 pbdb_records[i['occurrence_no']] = i
-            print pbdb_records
 
         resolved = []
         for idb_uuid in idigbio_ids:
@@ -127,14 +127,6 @@ class baseResource(Resource):
                 		if f in idigbio_records[idb_uuid]:
                 			row[f] = idigbio_records[idb_uuid][f]
             resolved.append(row)
-
-        # if idigbio_fields is not None:
-        #        m = list(self.idigbio.find({"idigbio:uuid": idb_uuid}))[0]
-        #        for f in idigbio_fields:
-        #            if f in m:
-        #                row[f] = m[f]
-        #    resolved.append(row)
-
 
         resolved_references["idigbio_resolved"] = resolved
 
@@ -150,13 +142,13 @@ class baseResource(Resource):
         resolved = []
         for mitem in data:
           for pbdbid in pbdb_ids:
-            print pbdbid
             row = {"url": 'https://paleobiodb.org/data1.2/' + pbdb_type + '/single.json?id=' + str(pbdbid) + '&show=' + show_type }
-            print pbdb_records[pbdbid]
+
             if paleobio_fields is not None:
                 for f in paleobio_fields:
                     if f in pbdb_records[pbdbid]:
                         row[f] = pbdb_records[pbdbid][f]
+
             #if paleobio_fields is not None:
             #    m = list(self.pbdb.find({"occurrence_no": int(pbdbid)}))[0]
             #    for f in paleobio_fields:
@@ -397,10 +389,6 @@ class baseResource(Resource):
     #
     def respond(self, return_object, respType="data"):
 
-        print " RESPOND DEBUG: "
-        print "Return Object ....:"
-        print return_object
-
         # Default Response
         if respType == "routes":
             defaults = {
@@ -459,21 +447,20 @@ class baseResource(Resource):
         if "faceted_matches" in return_object:
           resp['faceted_matches'] = return_object['faceted_matches']
 
-          # if annotations are requested create OpenAnnotations and add to return object
           if resp['includeAnnotations']:
 
             resp['annotations'] = []
             for fm in return_object['faceted_matches']:
 
-              target = { 'uuid': fm['idigbio_uuid'] } 
-              body = { 
-                'pbdb_id': fm['pbdb_id'],
-                'matchedOn': fm['matchedOn'],
-                'cnt_chars': '{}' # String Representation of JSON object of matching Darwin Core fields in Pub record
-                
-              }
+              idigbio_uuid = fm['idigbio_uuid']
+              pbdb_id = fm['pbdb_id'] 
 
-              resp['annotations'].append( annotation.create( target, body ) ) 
+              annoCursor = self.annotations.find({ "$and": [ {"hasTarget.@id": "urn:uuid:" + str(idigbio_uuid)},
+                { "hasBody.@id": "https://paleobiodb.org/data1.2/refs/single.json?id=" + str(pbdb_id) + "&show=both"} ] 
+              }, { "_id": False})
+
+              for anno in annoCursor:
+                resp['annotations'].append( anno ) 
 
 
         if self.returnResponse:
