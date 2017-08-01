@@ -39,7 +39,9 @@ class annotations(mongoBasedResource):
               criteria['parameters'][p] = str(params[p]).lower()
 
           d = []
-          annoCount = 0
+ 
+          # Total Count:
+          annoCount = annotations.find({}).count()
 
           # Allows for optional Date param since you can't $and on nothing.
           res = annotations.find({}, {'_id': False}).limit(limit).skip(offset)
@@ -51,7 +53,7 @@ class annotations(mongoBasedResource):
                   d.append(i)
 
 
-          counts = {'totalCount': len(d)}
+          counts = {'totalCount': annoCount, 'annotationsCount': len(d)}
 
           return self.respond({
               'counts': counts, 
