@@ -1,3 +1,4 @@
+import re
 from mongo import mongoBasedResource
 from flask_restful import reqparse
 
@@ -41,7 +42,7 @@ class publications(mongoBasedResource):
         if self.paramCount > 0:
 
           criteria = {
-            'endpoint': 'publication',
+            'endpoint': 'publications',
             'parameters': {},
             'matchPoints': [],
             'matchTerms': { 
@@ -81,8 +82,7 @@ class publications(mongoBasedResource):
 
               if 'author' == p:
                 author = str(params[p]).lower()
-                pubQuery.append({"author1_last": author})
-                pubQuery.append({"author2_last": author})
+                pubQuery.append({ "$or": [{ "author1_last": re.compile(author, re.IGNORECASE)}, {"author2_last": re.compile(author, re.IGNORECASE)}]})
 
               if 'journal' == p:
                 journal = str(params[p])
@@ -100,6 +100,11 @@ class publications(mongoBasedResource):
           pbdbCount = 0
 
           res = pubIndex.find({"$and":  pubQuery })
+
+          print " #### Pub Query Dump #### "
+
+          print pubQuery
+
 
           print "PubIndex Response: "
 
