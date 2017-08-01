@@ -134,9 +134,9 @@ class occurrences(mongoBasedResource):
 								pbdb_matches = json.loads(pbdb_doc.read())
 								geoMatches['pbdb'] = geoMatches['pbdb'] + pbdb_matches
 						else:
-							idb_doc = grid.get(i['idbGridFile'])
+							idb_doc = grid.get(i['pbdbGridFile'])
 							idb_matches = json.loads(idb_doc.read())
-							geoMatches['idigbio'] = geoMatches['idigbio'] + idb_matches
+							geoMatches['pbdb'] = geoMatches['pbdb'] + idb_matches
 								
 					if 'idbGridFile' in i:
 						if type(i['idbGridFile']) is list:
@@ -187,22 +187,36 @@ class occurrences(mongoBasedResource):
 			pbdbChronoSet = set(chronoMatches['pbdb'])
 			#return {'idbGeo': len(geoMatches['idigbio']), 'pbdbGeo': len(geoMatches['pbdb']), 'idbTaxon': len(taxonMatches['idigbio']), 'pbdbTaxon': len(taxonMatches['pbdb'])}
 			#return {'idbGeo': list(idbGeoSet), 'pbdbGeo': list(pbdbGeoSet), 'idbTaxon': list(idbTaxonSet), 'pbdbTaxon': list(pbdbTaxonSet)}
-			if len(idbGeoSet) > 0 and len(idbChronoSet) > 0:
-				matches['idigbio'] = list(idbGeoSet & idbTaxonSet & idbChronoSet)
-			elif len(idbGeoSet) > 0:
+			
+			if len(idbGeoSet) < 1 and len(idbChronoSet) < 1:
+				matches['idigbio'] = list(idbTaxonSet)
+			elif len(idbGeoSet) < 1 and len(idbTaxonSet):
+				matches['idigbio'] = list(idbChronoSet)
+			elif len(idbChronoSet) < 1 and len(idbTaxonSet) < 1:
+				matches['idigbio'] = list(idbGeoSet)
+			elif len(idbChronoSet) < 1:
 				matches['idigbio'] = list(idbGeoSet & idbTaxonSet)
-			elif len(idbChronoSet) > 0:
+			elif len(idbGeoSet) < 1:
 				matches['idigbio'] = list(idbTaxonSet & idbChronoSet)
+			elif len(idbTaxonSet) < 1:
+				matches['idigbio'] = list(idbChronoSet & idbGeoSet)
 			else:
-				matches['idigbio'] = taxonMatches['idigbio']
-			if len(pbdbGeoSet) > 0 and len(pbdbChronoSet) > 0:
-				matches['pbdb'] = list(pbdbGeoSet & pbdbTaxonSet & pbdbChronoSet)
-			elif len(pbdbGeoSet) > 0:
+				matches['idigbio'] = list(idbChronoSet & idbGeoSet & idbTaxonSet)
+			
+			if len(pbdbGeoSet) < 1 and len(pbdbChronoSet) < 1:
+				matches['pbdb'] = list(pbdbTaxonSet)
+			elif len(pbdbGeoSet) < 1 and len(pbdbTaxonSet):
+				matches['pbdb'] = list(pbdbChronoSet)
+			elif len(pbdbChronoSet) < 1 and len(pbdbTaxonSet) < 1:
+				matches['pbdb'] = list(pbdbGeoSet)
+			elif len(pbdbChronoSet) < 1:
 				matches['pbdb'] = list(pbdbGeoSet & pbdbTaxonSet)
-			elif len(pbdbChronoSet) > 0:
+			elif len(pbdbGeoSet) < 1:
 				matches['pbdb'] = list(pbdbTaxonSet & pbdbChronoSet)
+			elif len(pbdbTaxonSet) < 1:
+				matches['pbdb'] = list(pbdbChronoSet & pbdbGeoSet)
 			else:
-				matches['pbdb'] = taxonMatches['pbdb']	
+				matches['pbdb'] = list(pbdbChronoSet & pbdbGeoSet & pbdbTaxonSet)
 			
 			
 			idbCount = len(matches['idigbio'])

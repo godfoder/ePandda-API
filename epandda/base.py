@@ -123,8 +123,9 @@ class baseResource(Resource):
 
             if idigbio_fields is not None:
                 for f in idigbio_fields:
-                    if f in idigbio_records[idb_uuid]:
-                        row[f] = idigbio_records[idb_uuid][f]
+                	if idb_uuid in idigbio_records:
+                		if f in idigbio_records[idb_uuid]:
+                			row[f] = idigbio_records[idb_uuid][f]
             resolved.append(row)
 
         # if idigbio_fields is not None:
