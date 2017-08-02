@@ -29,9 +29,12 @@ class annotations(mongoBasedResource):
             'parameters': {},
           }
 
-          for p in ['annotationDateAfter', 'annotationDateBefore']:  
+          for p in ['annotationDate', 'annotationDateAfter', 'annotationDateBefore']:  
  
             if params[p]:
+
+              if 'annotationDate' == p:
+                annoQuery.append({"annotatedAt": { '$regex': params[p]} })
 
               if 'annotationDateAfter' == p:
                 annoQuery.append({"annotatedAt": { '$gte': params[p]} }) 
@@ -81,6 +84,13 @@ class annotations(mongoBasedResource):
             'maintainer_email': 'jon@epandda.org',
             'description': 'Returns openAnnotations for linked data in ePANDDA.',
             'params': [
+                {
+                    "name": "annotationDate",
+                    "label": "Annotation Date",
+                    "type": "text",
+                    "required": False,
+                    "description": "Filter annotation results by provided date ( simple date match ). Format annotationDate=YYYY-MM-DD"
+                },
                 {
                     "name": "annotationDateAfter",
                     "label": "Annotation Date After",
