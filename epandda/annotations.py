@@ -29,13 +29,20 @@ class annotations(mongoBasedResource):
             'parameters': {},
           }
 
-          for p in ['annotationDate']:  
+          for p in ['annotationDate', 'annotationDateAfter', 'annotationDateBefore']:  
  
             if params[p]:
 
               if 'annotationDate' == p:
-                annoQuery.append({"annotatedAt": { '$regex': params[p]} }) 
+                annoQuery.append({"annotatedAt": { '$regex': params[p]} })
+
+              if 'annotationDateAfter' == p:
+                annoQuery.append({"annotatedAt": { '$gte': params[p]} }) 
             
+              if 'annotationDateBefore' == p:
+                print "annotation Date Before: " + str(params[p])
+                annoQuery.append({"annotatedAt": { '$lte': params[p]} })
+
               criteria['parameters'][p] = str(params[p]).lower()
 
           d = []
@@ -45,9 +52,12 @@ class annotations(mongoBasedResource):
 
           if annoQuery:
             res = annotations.find({"$and":  annoQuery }, {'_id': False}).skip(offset).limit(limit)
+            annoCount = res.count()
+
           else:
             # Allows for optional Date param since you can't $and on nothing.
             res = annotations.find({}, {'_id': False}).skip(offset).limit(limit)
+            
 
 
           if res:
@@ -79,7 +89,21 @@ class annotations(mongoBasedResource):
                     "label": "Annotation Date",
                     "type": "text",
                     "required": False,
-                    "description": "Filter annotation results by AnnotatedAt date. Format annotationDate=YYYY-MM-DD"
+                    "description": "Filter annotation results by provided date ( simple date match ). Format annotationDate=YYYY-MM-DD"
+                },
+                {
+                    "name": "annotationDateAfter",
+                    "label": "Annotation Date After",
+                    "type": "text",
+                    "required": False,
+                    "description": "Filter annotation results equal to or after provided date. Format annotationDateAfter=YYYY-MM-DD"
+                },
+                {
+                    "name": "annotationDateBefore",
+                    "label": "Annotation Date Before",
+                    "type": "text",
+                    "required": False,
+                    "description": "Filter annotation results before provided date. Format annotationDateBefore=YYYY-MM-DD"
                 }
             ]
         }
