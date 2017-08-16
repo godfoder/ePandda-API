@@ -19,7 +19,9 @@ from epandda import occurrences
 from epandda import query
 from epandda import taxonomy
 from epandda import bugReport
+from epandda import lithostratigraphy
 from epandda import annotations
+
 from flask_cors import CORS, cross_origin
 import sys
 import os
@@ -49,6 +51,7 @@ api.add_resource(stratigraphy.stratigraphy, '/stratigraphy')
 api.add_resource(occurrences.occurrences, '/occurrences')
 api.add_resource(taxonomy.taxonomy, '/taxonomy')
 api.add_resource(bugReport.bugReport, '/bugReport')
+api.add_resource(lithostratigraphy.lithostratigraphy, '/lithostratigraphy')
 api.add_resource(annotations.annotations, '/annotations')
 
 if __name__ == '__main__':
