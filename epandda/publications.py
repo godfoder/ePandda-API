@@ -62,21 +62,30 @@ class publications(mongoBasedResource):
             if params[p]:
 
               if 'scientific_name' == p:
-                higher_taxa = str(params[p]).title()
+                higher_taxa = str(params[p]).lower()
                 pubQuery.append({"higher_taxa": higher_taxa })  
 
               if 'stateProvinceName' == p:
                 state = str(params[p]).lower()
-                pubQuery.append({"states": state})
+                pubQuery.append({"states": re.compile(state, re.IGNORECASE)})
                 criteria['matchTerms']['stateProvinceNames'].append( state )
 
               if 'county' == p:
                 county = str(params[p]).lower()
-                pubQuery.append({"county": county})
+                pubQuery.append({"counties": re.compile(county, re.IGNORECASE)})
                 criteria['matchTerms']['countyNames'].append( county )
               
+              # ... This doesn't exist as a thing yet :/
               if 'locality' == p:
                 locality = str(params[p]).lower()
+
+                # Search localities index if locality name given ..
+                # Get state and county for this
+                # Filter iDigBio results by locality ... 
+
+
+
+
                 pubQuery.append({"locality": locality})
                 criteria['matchTerms']['localityNames'].append( locality )
 
@@ -86,11 +95,11 @@ class publications(mongoBasedResource):
 
               if 'journal' == p:
                 journal = str(params[p])
-                pubQuery.append({"pub_title": journal})
+                pubQuery.append({"pubtitle": { '$regex': re.compile(journal, re.IGNORECASE)}})
 
               if 'article' == p:
                 article = str(params[p])
-                pubQuery.append({"index_term": article})
+                pubQuery.append({"index_term": { '$regex': re.compile(article, re.IGNORECASE)} })
 
               criteria['parameters'][p] = str(params[p]).lower()
 
@@ -100,22 +109,11 @@ class publications(mongoBasedResource):
           pbdbCount = 0
 
           res = pubIndex.find({"$and":  pubQuery })
-
-          print " #### Pub Query Dump #### "
-
-          print pubQuery
-
-
-          print "PubIndex Response: "
-
-
           if res:
 
             for i in res:
-           
 
               if 'vetted' in i:
-
 
                 for idb in i['vetted']:
                   
@@ -170,8 +168,6 @@ class publications(mongoBasedResource):
 
           d.append({'matches': finalMatches})
           d = self.resolveReferences(d,'refs', 'both' )
-
-          print "Our references resolved ..."
 
           counts = {
             'totalCount': idbCount + pbdbCount, 
