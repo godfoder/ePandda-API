@@ -16,11 +16,12 @@ parser.add_argument('institution_code', type=str, help='The abbreviated code sub
 #
 class occurrences(mongoBasedResource):
 	def process(self):
-	
+
 		lindex = self.client.endpoints.localityIndex                       # Mongodb index for localities
 		tindex = self.client.endpoints.taxonIndex						     # Mongodb index for taxa
 		cindex = self.client.endpoints.chronoStratIndex					 # Mongodb index for chronostratigraphy
-		grid = gridfs.GridFS(self.client.endpoints)                   
+		ltindex = self.client.endpoints.lithoStratIndex
+		grid = gridfs.GridFS(self.client.endpoints)
 
 		# returns dictionary of params as defined in endpoint description
 		# will throw exception if required param is not present
@@ -33,28 +34,33 @@ class occurrences(mongoBasedResource):
 			chronoRes = None
 			localityRes = None
 			res = None
-			criteria = {'endpoint': 'taxonomy', 'parameters': {}, 'matchTerms': {'scientificNames': [], 'stateProvinceNames': [], 'countryNames': [], 'countyNames': [], 'localityNames': [], 'originalStates': [], 'originalCountries': [], 'originalCounties': [], 'originalLocalities': [], 'chronostratigraphy': []}}
+			lithoRes = None
+			criteria = {'endpoint': 'occurrences', 'parameters': {}, 'matchTerms': {'scientificNames': [], 'stateProvinceNames': [], 'countryNames': [], 'countyNames': [], 'localityNames': [], 'originalStates': [], 'originalCountries': [], 'originalCounties': [], 'originalLocalities': [], 'chronostratigraphy': [], 'lithostratigraphy': []}}
 			taxonQuery = []
 			localityQuery = []
-			instQuery = []
+			lithQuery = []
 			stratQuery = []
 			if params['taxon_name']:
 				taxon_name = params['taxon_name']
 				res = tindex.find({"$text": {"$search": '"' + taxon_name + '"'}})
-			
+
 			if params['locality']:
 				locality = params['locality']
 				localityRes = lindex.find({'$text': {'$search': '"' + locality + '"'}})
-			
+
 			if params['chronostratigraphy']:
 				chronoStrat = params['chronostratigraphy']
 				chronoRes = cindex.find({'$text': {'$search': '"' + chronoStrat + '"'}})
-			
-			# TODO: Add Filtering for locality, period and institution
+
+			if params['lithostratigraphy']:
+				lithoStrat = params['lithostratigraphy']
+				lithoRes = ltindex.find({'$text': {'$search': '"' + lithoStrat + '"'}})
+
 			d = []
 			matches = {'idigbio': [], 'pbdb': []}
 			taxonMatches = {'idigbio': [], 'pbdb': []}
 			chronoMatches = {'idigbio': [], 'pbdb': []}
+			lithoMatches = {'idigbio': [], 'pbdb': []}
 			idbCount = 0
 			pbdbCount = 0
 			# taxonomy
@@ -95,7 +101,7 @@ class occurrences(mongoBasedResource):
 								idb_doc = grid.get(i['idbGridFile'])
 								idb_matches = json.loads(idb_doc.read())
 								taxonMatches['idigbio'] = taxonMatches['idigbio'] + idb_matches
-			
+
 			# locality
 			geoMatches = {'idigbio': [], 'pbdb': []}
 			if localityRes:
@@ -109,7 +115,7 @@ class occurrences(mongoBasedResource):
 					if 'locality' in i:
 						if i['locality'] not in criteria['matchTerms']['localityNames']:
 							criteria['matchTerms']['localityNames'].append(i['locality'])
-						
+
 					if 'originalStateProvinceName' in i:
 						for origState in i['originalStateProvinceName']:
 							if origState not in criteria['matchTerms']['originalStates']:
@@ -137,7 +143,7 @@ class occurrences(mongoBasedResource):
 							idb_doc = grid.get(i['pbdbGridFile'])
 							idb_matches = json.loads(idb_doc.read())
 							geoMatches['pbdb'] = geoMatches['pbdb'] + idb_matches
-								
+
 					if 'idbGridFile' in i:
 						if type(i['idbGridFile']) is list:
 							idbGrids = i['idbGridFile']
@@ -149,7 +155,7 @@ class occurrences(mongoBasedResource):
 							idb_doc = grid.get(i['idbGridFile'])
 							idb_matches = json.loads(idb_doc.read())
 							geoMatches['idigbio'] = geoMatches['idigbio'] + idb_matches
-			
+
 			# chronostratigraphy
 			if chronoRes:
 				for i in chronoRes:
@@ -158,7 +164,7 @@ class occurrences(mongoBasedResource):
 						if level in i:
 							temp_doc[level] = i[level]
 					criteria['matchTerms']['chronostratigraphy'].append(temp_doc)
-					
+
 					if 'pbdbGridFile' in i:
 						pbdbGrids = i['pbdbGridFile']
 						for file in pbdbGrids:
@@ -177,48 +183,52 @@ class occurrences(mongoBasedResource):
 							idb_doc = grid.get(i['idbGridFile'])
 							idb_matches = json.loads(idb_doc.read())
 							chronoMatches['idigbio'] = chronoMatches['idigbio'] + idb_matches
-			
-			
+
+			# lithostratigraphy
+			if lithoRes:
+				for i in lithoRes:
+					temp_doc = {}
+
+					criteria['matchTerms']['lithostratigraphy'].append({'name': i['name'], 'rank': i['rank']})
+
+					if 'pbdb_matches' in i:
+						pbdb_matches = i['pbdb_matches']
+						lithoMatches['pbdb'] = lithoMatches['pbdb'] + pbdb_matches
+
+					if 'idb_matches' in i:
+						idb_matches = i['idb_matches']
+						lithoMatches['idigbio'] = lithoMatches['idigbio'] + idb_matches
+
+			print 'Locality Counts: ' + str(len(geoMatches['idigbio'])) + ' | ' + str(len(geoMatches['pbdb']))
+			print 'Taxon Counts: ' + str(len(taxonMatches['idigbio'])) + ' | ' + str(len(taxonMatches['pbdb']))
+			print 'Chrono Counts: ' + str(len(chronoMatches['idigbio'])) + ' | ' + str(len(chronoMatches['pbdb']))
+			print 'Litho Counts: ' + str(len(lithoMatches['idigbio'])) + ' | ' + str(len(lithoMatches['pbdb']))
+
 			idbGeoSet = set(geoMatches['idigbio'])
 			pbdbGeoSet = set(geoMatches['pbdb'])
 			idbTaxonSet = set(taxonMatches['idigbio'])
 			pbdbTaxonSet = set(taxonMatches['pbdb'])
 			idbChronoSet = set(chronoMatches['idigbio'])
 			pbdbChronoSet = set(chronoMatches['pbdb'])
-			#return {'idbGeo': len(geoMatches['idigbio']), 'pbdbGeo': len(geoMatches['pbdb']), 'idbTaxon': len(taxonMatches['idigbio']), 'pbdbTaxon': len(taxonMatches['pbdb'])}
-			#return {'idbGeo': list(idbGeoSet), 'pbdbGeo': list(pbdbGeoSet), 'idbTaxon': list(idbTaxonSet), 'pbdbTaxon': list(pbdbTaxonSet)}
-			
-			if len(idbGeoSet) < 1 and len(idbChronoSet) < 1:
-				matches['idigbio'] = list(idbTaxonSet)
-			elif len(idbGeoSet) < 1 and len(idbTaxonSet):
-				matches['idigbio'] = list(idbChronoSet)
-			elif len(idbChronoSet) < 1 and len(idbTaxonSet) < 1:
-				matches['idigbio'] = list(idbGeoSet)
-			elif len(idbChronoSet) < 1:
-				matches['idigbio'] = list(idbGeoSet & idbTaxonSet)
-			elif len(idbGeoSet) < 1:
-				matches['idigbio'] = list(idbTaxonSet & idbChronoSet)
-			elif len(idbTaxonSet) < 1:
-				matches['idigbio'] = list(idbChronoSet & idbGeoSet)
-			else:
-				matches['idigbio'] = list(idbChronoSet & idbGeoSet & idbTaxonSet)
-			
-			if len(pbdbGeoSet) < 1 and len(pbdbChronoSet) < 1:
-				matches['pbdb'] = list(pbdbTaxonSet)
-			elif len(pbdbGeoSet) < 1 and len(pbdbTaxonSet):
-				matches['pbdb'] = list(pbdbChronoSet)
-			elif len(pbdbChronoSet) < 1 and len(pbdbTaxonSet) < 1:
-				matches['pbdb'] = list(pbdbGeoSet)
-			elif len(pbdbChronoSet) < 1:
-				matches['pbdb'] = list(pbdbGeoSet & pbdbTaxonSet)
-			elif len(pbdbGeoSet) < 1:
-				matches['pbdb'] = list(pbdbTaxonSet & pbdbChronoSet)
-			elif len(pbdbTaxonSet) < 1:
-				matches['pbdb'] = list(pbdbChronoSet & pbdbGeoSet)
-			else:
-				matches['pbdb'] = list(pbdbChronoSet & pbdbGeoSet & pbdbTaxonSet)
-			
-			
+			idbLithoSet = set(lithoMatches['idigbio'])
+			pbdbLithoSet = set(lithoMatches['pbdb'])
+
+			idbMatches = idbGeoSet | idbTaxonSet | idbChronoSet | idbLithoSet
+
+			for idbMatchSet in  [idbGeoSet, idbTaxonSet, idbChronoSet, idbLithoSet]:
+				if len(idbMatchSet) < 1:
+					continue
+				idbMatches = idbMatches & idbMatchSet
+
+			pbdbMatches = pbdbGeoSet | pbdbTaxonSet | pbdbChronoSet | pbdbLithoSet
+			for pbdbMatchSet in  [pbdbGeoSet, pbdbTaxonSet, pbdbChronoSet, pbdbLithoSet]:
+				if len(pbdbMatchSet) < 1:
+					continue
+				pbdbMatches = pbdbMatches & pbdbMatchSet
+
+			matches['idigbio'] = list(idbMatches)
+			matches['pbdb'] = list(pbdbMatches)
+
 			idbCount = len(matches['idigbio'])
 			pbdbCount = len(matches['pbdb'])
 
@@ -256,7 +266,14 @@ class occurrences(mongoBasedResource):
 					"name": "chronostratigraphy",
 					"label": "Chronostratigraphy",
 					"type": "text",
-					"required": False, 
+					"required": False,
 					"description": "The geologic time period to filter taxon occurrences by"
+				},
+				{
+					"name": "lithostratigraphy",
+					"label": "Lithostratigraphy",
+					"type": "text",
+					"required": False,
+					"description": "The lithostratigraphic unit to filter taxon occurrences by"
 				}
 			]}
