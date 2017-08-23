@@ -162,9 +162,10 @@ class publications(mongoBasedResource):
 
           idbCount = len(finalMatches['idigbio'])
           pbdbCount = len(finalMatches['pbdb'])
-          
-          resolveSet = { 'idigbio': finalMatches['idigbio'][offset:limit],
-                         'pbdb': finalMatches['pbdb'][offset:limit] }
+
+          resolveSet = { 'idigbio': finalMatches['idigbio'],
+                         'pbdb': finalMatches['pbdb']}
+
 
           d.append({'matches': finalMatches})
           d = self.resolveReferences(d,'refs', 'both' )
