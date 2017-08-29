@@ -94,7 +94,7 @@ class publications(mongoBasedResource):
                 pubQuery.append({ "$or": [{ "author1_last": re.compile(author, re.IGNORECASE)}, {"author2_last": re.compile(author, re.IGNORECASE)}]})
 
               if 'journal' == p:
-                journal = str(params[p])
+                journal = str(params[p]).lower()
                 pubQuery.append({"pubtitle": { '$regex': re.compile(journal, re.IGNORECASE)}})
 
               if 'article' == p:
