@@ -247,6 +247,7 @@ class publications(mongoBasedResource):
                 },
                 {
                     "name": "includeAnnotations",
+                    "label": "Include Annotations",
                     "type": "boolean",
                     "required": False,
                     "description": "Toggles if OpenAnnotations section should be included or not"
