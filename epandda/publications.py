@@ -117,7 +117,7 @@ class publications(mongoBasedResource):
 
                 for idb in i['vetted']:
                   
-                  matches['faceted_matches'].append({ 'pbdb_id': i['pid'], 'idigbio_uuid': idb['uuid'], 'matchedOn': idb['matched_on'], 'score': idb['score']}) 
+                  #matches['faceted_matches'].append({ 'pbdb_id': i['pid'], 'idigbio_uuid': idb['uuid'], 'matchedOn': idb['matched_on'], 'score': idb['score']}) 
                   matches['idigbio'].append( idb['uuid'] )
 
               matches['pbdb'].append( i['pid'] )
