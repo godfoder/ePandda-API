@@ -19,7 +19,7 @@ class publications(mongoBasedResource):
     def process(self):
 
         # Mongodb index for Publication
-        pubIndex = self.client.endpoints.pubIndexV2
+        pubIndex = self.client.enpoints.pubIndexV2
 
   
         # returns dictionary of params as defined in endpoint description
@@ -84,8 +84,6 @@ class publications(mongoBasedResource):
                 # Filter iDigBio results by locality ... 
 
 
-
-
                 pubQuery.append({"locality": locality})
                 criteria['matchTerms']['localityNames'].append( locality )
 
@@ -117,7 +115,7 @@ class publications(mongoBasedResource):
 
                 for idb in i['vetted']:
                   
-                  #matches['faceted_matches'].append({ 'pbdb_id': i['pid'], 'idigbio_uuid': idb['uuid'], 'matchedOn': idb['matched_on'], 'score': idb['score']}) 
+                  matches['faceted_matches'].append({ 'pbdb_id': i['pid'], 'idigbio_uuid': idb['uuid'], 'matchedOn': idb['matched_on'], 'score': idb['score']}) 
                   matches['idigbio'].append( idb['uuid'] )
 
               matches['pbdb'].append( i['pid'] )
