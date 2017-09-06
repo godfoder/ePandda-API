@@ -24,8 +24,8 @@ class baseResource(Resource):
         # Load API config
         self.config = json.load(open('./config.json'))
 
-        #self.client = MongoClient("mongodb://" + self.config['mongodb_user'] + ":" + self.config['mongodb_password'] + "@" + self.config['mongodb_host'])
-        self.client = MongoClient("mongodb://127.0.0.1")
+        self.client = MongoClient("mongodb://" + self.config['mongodb_user'] + ":" + self.config['mongodb_password'] + "@" + self.config['mongodb_host'])
+        #self.client = MongoClient("mongodb://127.0.0.1")
         self.idigbio = self.client.idigbio.occurrence
         self.pbdb = self.client.pbdb.pbdb_occurrences
         self.annotations = self.client.endpoints.annotations
