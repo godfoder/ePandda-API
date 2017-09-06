@@ -24,8 +24,8 @@ class baseResource(Resource):
         # Load API config
         self.config = json.load(open('./config.json'))
 
-        self.client = MongoClient("mongodb://" + self.config['mongodb_user'] + ":" + self.config['mongodb_password'] + "@" + self.config['mongodb_host'])
-        #self.client = MongoClient("mongodb://127.0.0.1")
+        #self.client = MongoClient("mongodb://" + self.config['mongodb_user'] + ":" + self.config['mongodb_password'] + "@" + self.config['mongodb_host'])
+        self.client = MongoClient("mongodb://127.0.0.1")
         self.idigbio = self.client.idigbio.occurrence
         self.pbdb = self.client.pbdb.pbdb_occurrences
         self.annotations = self.client.endpoints.annotations
@@ -68,7 +68,6 @@ class baseResource(Resource):
         idigbio_ids = []
         pbdb_ids = []
 
-        
         # Could params this if need be?
         use_UUID = True
 
@@ -98,6 +97,7 @@ class baseResource(Resource):
             idigbio_ids = idigbio_ids[offset:limit]
             pbdb_ids = pbdb_ids[offset:limit]
 
+        # Double limiting? 
         if not use_UUID:
             idigbio_ids = map(lambda id: ObjectId(id), idigbio_ids[0:limit])
             pbdb_ids = map(lambda id: ObjectId(id), pbdb_ids[0:limit])
@@ -109,8 +109,10 @@ class baseResource(Resource):
         else:
             m = self.idigbio.find({"idigbio:uuid": {"$in" : idigbio_ids}})
             idigbio_records = {}
+
             for i in m:
                 idigbio_records[i['idigbio:uuid']] = i
+
             pbdb_ids = [ int(pbdb_id) for pbdb_id in pbdb_ids ]
             p = self.pbdb.find({"occurrence_no": {"$in" : pbdb_ids}})
             pbdb_records = {}
@@ -130,12 +132,6 @@ class baseResource(Resource):
 
         resolved_references["idigbio_resolved"] = resolved
 
-        #
-        # resolve pbdb refs
-        #
-        #m = self.pbdb.find({"_id": {"$in": pbdb_ids}})
-
-
         if 'refs' == pbdb_type:
           show_type = 'both'
 
@@ -148,13 +144,7 @@ class baseResource(Resource):
                 for f in paleobio_fields:
                     if f in pbdb_records[pbdbid]:
                         row[f] = pbdb_records[pbdbid][f]
-
-            #if paleobio_fields is not None:
-            #    m = list(self.pbdb.find({"occurrence_no": int(pbdbid)}))[0]
-            #    for f in paleobio_fields:
-            #        if f in m:
-            #            row[f] = m[f]
-
+            
             resolved.append(row)
 
         resolved_references["pbdb_resolved"] = resolved
@@ -443,24 +433,14 @@ class baseResource(Resource):
         if 'media' in return_object:
             resp['media'] = return_object['media']
 
-        # this may be specific to publications only ..
-        if "faceted_matches" in return_object:
-          resp['faceted_matches'] = return_object['faceted_matches']
 
-          if resp['includeAnnotations']:
-
-            resp['annotations'] = []
-            for fm in return_object['faceted_matches']:
-
-              idigbio_uuid = fm['idigbio_uuid']
-              pbdb_id = fm['pbdb_id'] 
-
-              annoCursor = self.annotations.find({ "$and": [ {"hasTarget.@id": "urn:uuid:" + str(idigbio_uuid)},
-                { "hasBody.@id": "https://paleobiodb.org/data1.2/refs/single.json?id=" + str(pbdb_id) + "&show=both"} ] 
-              }, { "_id": False})
-
-              for anno in annoCursor:
-                resp['annotations'].append( anno ) 
+        # Get annotations by resolved PBDB Ref URL
+        if resp['includeAnnotations']:
+          resp['annotations'] = []
+          for pb in return_object['results']['pbdb_resolved']:
+            annoCursor = self.annotations.find({"hasBody.@id": pb['url']},{"_id": False})
+            for anno in annoCursor:
+              resp['annotations'].append( anno )
 
 
         if self.returnResponse:
