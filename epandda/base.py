@@ -9,6 +9,7 @@ import importlib
 import inspect
 from sources import idigbio
 from sources import paleobio
+from sources import paleobio_refs
 import re
 import annotation
 
@@ -28,6 +29,7 @@ class baseResource(Resource):
         #self.client = MongoClient("mongodb://127.0.0.1")
         self.idigbio = self.client.idigbio.occurrence
         self.pbdb = self.client.pbdb.pbdb_occurrences
+        self.refs = self.client.pbdb.pbdb_refs
         self.annotations = self.client.endpoints.annotations
 
 
@@ -43,7 +45,8 @@ class baseResource(Resource):
 
         self.sources = {
             "idigbio": idigbio.idigbio(),
-            "paleobio": paleobio.paleobio()
+            "paleobio": paleobio.paleobio(),
+            "paleobio_refs": paleobio_refs.paleobio_refs()
         }
 
     #
@@ -61,6 +64,9 @@ class baseResource(Resource):
 
         idigbio_fields = self.getFieldsForSource("idigbio", True)
         paleobio_fields = self.getFieldsForSource("paleobio", True)
+
+        if "refs" == pbdb_type:
+          paleobio_fields = self.getFieldsForSource("paleobio_refs", True) 
 
         offset = self.offset()
         limit = self.limit()
@@ -114,10 +120,21 @@ class baseResource(Resource):
                 idigbio_records[i['idigbio:uuid']] = i
 
             pbdb_ids = [ int(pbdb_id) for pbdb_id in pbdb_ids ]
-            p = self.pbdb.find({"occurrence_no": {"$in" : pbdb_ids}})
-            pbdb_records = {}
-            for i in p:
-                pbdb_records[i['occurrence_no']] = i
+
+            if "refs" == pbdb_type:
+
+              print "making refs query"
+              pbdb_ids_str = [ str(pbdb_id) for pbdb_id in pbdb_ids ]
+              p = self.refs.find({"pid": {"$in": pbdb_ids_str}}, {"_id": False})
+              pbdb_records = {}
+              for i in p:
+                pbdb_records[ int(i['pid']) ] = i
+
+            else: 
+              p = self.pbdb.find({"occurrence_no": {"$in" : pbdb_ids}})
+              pbdb_records = {}
+              for i in p:
+                 pbdb_records[i['occurrence_no']] = i
 
         resolved = []
         for idb_uuid in idigbio_ids:
@@ -137,6 +154,7 @@ class baseResource(Resource):
 
         resolved = []
         for mitem in data:
+
           for pbdbid in pbdb_ids:
             row = {"url": 'https://paleobiodb.org/data1.2/' + pbdb_type + '/single.json?id=' + str(pbdbid) + '&show=' + show_type }
 
