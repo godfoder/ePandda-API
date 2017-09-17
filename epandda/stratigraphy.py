@@ -3,6 +3,7 @@ from flask_restful import reqparse
 import gridfs
 import json
 import re
+from elasticsearch import Elasticsearch
 
 parser = reqparse.RequestParser()
 
@@ -23,8 +24,8 @@ class stratigraphy(mongoBasedResource):
 		# Mongodb gridFS instance
 		grid = gridfs.GridFS(self.client.endpoints)                   
 	
-		# ElasticSearch will be enabled for this endpoint
-		#es = Elasticsearch(['http://???:9200'])	
+		# We use Elasticsearch to provide fuzzy matching on search terms
+		es = Elasticsearch(['http://whirl.mine.nu:9200'])	
 	
 		# returns dictionary of params as defined in endpoint description
 		# will throw exception if required param is not present
@@ -42,22 +43,23 @@ class stratigraphy(mongoBasedResource):
 				val = p.keys()[0]
 				if (params[val]):
 					criteria['parameters'][val] = params[val]
-					if re.match("^([\w]+)(?:[\W]+| to )([\w]+)$", params[val]):
-						chrono_range = re.match(r'^([\w]+)(?:[\W]+| to )([\w]+)$', params[val])
-						chrono_early = chrono_range.group(1)
+					chrono_range = re.match(r'^([\w\s]+)[\s]*(?:-|to|$)[\s]*([\w\s]*)$', params[val])
+					chrono_early = chrono_range.group(1)
+					if chrono_range.group(2) != '':
 						chrono_late = chrono_range.group(2)
 					else:
-						chrono_early = chrono_late = params[val]
-					#ma_start_res = es.search(index="chronolookup", body={"query": {"fuzzy": {"name": chrono_early}}})
-					#for hit in ma_start_res['hits']['hits']:
-					#	ma_start = hit["_source"]["start_ma"]
-					#ma_end_res = es.search(index="chronolookup", body={"query": {"fuzzy": {"name": chrono_late}}})
-					#for hit in ma_end_res['hits']['hits']:
-					#	ma_end = hit["_source"]["end_ma"]
-					ma_start_result = lookup.find_one({'name': chrono_early})
-					ma_start = ma_start_result['start_ma']
-					ma_end_result = lookup.find_one({'name': chrono_late})
-					ma_end = ma_end_result['end_ma']
+						chrono_late = chrono_early
+					ma_start_score = ma_end_score = 0
+					ma_start_res = es.search(index="chronolookup", body={"query": {"match": {"name": {"query": chrono_early, "fuzziness": "AUTO"}}}})
+					for hit in ma_start_res['hits']['hits']:
+						if hit['_score'] > ma_start_score:
+							ma_start = hit["_source"]["start_ma"]
+							ma_start_score = hit['_score']
+					ma_end_res = es.search(index="chronolookup", body={"query": {"match": {"name": {"query": chrono_late, "fuzziness": "AUTO"}}}})
+					for hit in ma_end_res['hits']['hits']:
+						if hit['_score'] > ma_end_score:
+							ma_end = hit["_source"]["end_ma"]
+							ma_end_score = hit['_score']
 					stratQuery.append({'earlyBound': {'$lte': ma_start}, 'lateBound': {'$gte': ma_end}})
 			if(params['chronostratigraphy']):
 				criteria['parameters']['chronostratigraphy'] = params['chronostratigraphy']
