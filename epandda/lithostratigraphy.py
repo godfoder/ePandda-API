@@ -107,7 +107,7 @@ class lithostratigraphy(mongoBasedResource):
 				"name": "lithostratigraphy",
 				"label": "Lithostratigraphy Full Text",
 				"type": "text",
-				"required": False,
+				"required": True,
 				"description": "Search on the full lithostratigraphic hierarchy "
 			},{
 				"name": "rank",
